@@ -31,9 +31,13 @@ class MailActivatesController extends AppController {
             {
                 $this->MailActivate->set($this->data);
                 $this->MailActivate->set('user_id', $user['User']['id']);
-                $this->MailActivate->set('code', Password::generate(8, 7));
+                $code = Password::generate(8, 7);
+                $this->MailActivate->set('code', $code);
                 if ($this->MailActivate->save()) {
-                    $this->_send_confirm_mail($this->data['MailActivate']['mail']);
+                    $id = $this->MailActivate->getInsertID();
+                    $this->_send_confirm_mail(
+                        $this->data['MailActivate']['mail'],
+                        Router::url("/mail_activates/confirm/$id/$code", true));
                     $this->set('mail', $this->data['MailActivate']['mail']);
                     return $this->render('confirmation_mail_sent');
                 } else {
@@ -44,18 +48,29 @@ class MailActivatesController extends AppController {
         }
     }
 
-    function _send_confirm_mail($address) {
-        $this->Email->from = '系统自动生成邮件.请勿回复 <no-reply@bit.edu.cn>';
-        $this->Email->to = $address;
-        $this->Email->bcc = 'liling@bit.edu.cn';
-        $this->Email->subject = '校园网单点登录服务修改邮箱确认信';
-        $this->Email->template = 'mail_activate_confirm';
-        $this->Email->sendAs = 'both';
-
+    /**
+     * 发送确认信
+     */
+    function _send_confirm_mail($address, $url) {
+        $this->Email->from = Configure::read('Email.from');
+        $bcc = Configure::read('Email.bcc');
+        if (!empty($bcc)) $this->Email->bcc = $bcc;
+        $this->Email->sendAs = 'both'; //Configure::read('Email.sendAs');
         $this->Email->delivery = Configure::read('Email.delivery');
         if ($this->Email->delivery == 'smtp')
             $this->Email->smtpOptions = Configure::read('SMTP.options');
-        $this->Email->send();
+
+        $user = $this->CasAuth->user();
+        $this->Email->to = $user['User']['fullname'].' <'.$address.'>';
+        $this->Email->subject = '校园网单点登录服务修改邮箱确认信';
+        $this->set('user', $user['User']);
+        $this->set('mail', $address);
+        $this->set('confirm_url', $url);
+        $this->Email->send('', 'mail_activate_confirm', 'default');
+
+        if ($this->Email->smtpError) {
+            $this->Session->setFlash($this->Email->smtpError);
+        }
     }
 
     function confirm($id, $code) {
