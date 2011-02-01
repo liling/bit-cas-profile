@@ -14,6 +14,12 @@ class PasswordsController extends AppController {
 
     /**
      * 修改密码。
+     *
+     * 首先判断用户两次输入的密码是否一致，然后通过 bind 到 LDAP 服务器的方法，
+     * 判断用户输入的旧密码是否正确。如果可以正常连接，则继续用该连接修改用户
+     * 的密码。
+     *
+     * LDAP 服务器上用户必须拥有修改本人密码的权限。
      */
     function change() {
         $this->set('title_for_layout', '修改密码');
@@ -47,10 +53,17 @@ class PasswordsController extends AppController {
         }
     }
 
+    /**
+     * 让用户输入自己的用户名（工号/学号）以及电子邮件地址，判断用户的输入是否
+     * 正确。如果用户输入的信息匹配，则向用户的电子信箱发送修改密码确认信。
+     */
     function recovery() {
 
     }
 
+    /**
+     * 向用户的信箱发送修改密码确认信。
+     */
     function _send_recovery_mail($address) {
         $this->Email->from = '系统自动生成邮件.请勿回复 <no-reply@bit.edu.cn>';
         $this->Email->to = $address;
@@ -65,6 +78,12 @@ class PasswordsController extends AppController {
         $this->Email->send();
     }
 
+    /**
+     * 处理用户修改密码确认。用于确认的信息包括一个顺序号和相应的确认码。
+     *
+     * 如果成功确认用户身份，则自动生成一个新密码显示在屏幕上，同时向用户的邮
+     * 箱发送一封邮件以告知用户密码已经修改。
+     */
     function confirm($id, $code) {
         $this->set('title_for_layout', '确认密码修改');
 
@@ -84,6 +103,9 @@ class PasswordsController extends AppController {
         }
     }
 
+    /**
+     * 发送新密码到用户的邮箱。
+     */
     function _send_new_password_mail($address) {
         $this->Email->from = '系统自动生成邮件.请勿回复 <no-reply@bit.edu.cn>';
         $this->Email->to = $address;
