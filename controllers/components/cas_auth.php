@@ -16,7 +16,8 @@ App::import('Model', 'Person');
  * Licensed under The MIT License 
  * 
  * @writtenby      Pietro Brignola 
- * @lastmodified   Date: October 12, 2010 
+ * @writtenby      Li Ling
+ * @lastmodified   Date: Feb 2, 2011 
  * @license        http://www.opensource.org/licenses/mit-license.php The MIT License 
  */  
 class CasAuthComponent extends AuthComponent { 
@@ -30,7 +31,7 @@ class CasAuthComponent extends AuthComponent {
      */ 
     function startup(&$controller) { 
 
-        // Copied from auth.php
+        // 从 CakePHP 的 auth.php 中复制出的代码，用于处理各种无须认证的情况
 		$isErrorOrTests = (
 			strtolower($controller->name) == 'cakeerror' ||
 			(strtolower($controller->name) == 'tests' && Configure::read() > 0)
@@ -72,18 +73,19 @@ class CasAuthComponent extends AuthComponent {
 			return true;
 		}
 
-        // CAS authentication required if user is not logged in  
+        // 如果用户尚未登录，则通过 CAS 做用户身份认证
         if (!$this->user()) { 
             // Set debug mode 
             phpCAS::setDebug(false); 
-            //Initialize phpCAS 
+            // 初始化 phpCAS 
             phpCAS::client(CAS_VERSION_2_0, Configure::read('CAS.hostname'), Configure::read('CAS.port'), Configure::read('CAS.uri'), false);
-            // No SSL validation for the CAS server 
+            // 不验证 CAS 服务器的证书
             phpCAS::setNoCasServerValidation(); 
-            // Force CAS authentication if required 
+            // 强制进行 CAS 认证
             phpCAS::forceAuthentication(); 
 
-            $this->fetchPersonFromLdap(phpCAS::getUser());
+            // 认证成功的情况下，从 LDAP 服务器获取相关人员的基本信息
+            $this->_fetchPersonFromLdap(phpCAS::getUser());
 
             $model =& $this->getModel(); 
             $controller->data[$model->alias][$this->fields['username']] = phpCAS::getUser(); 
@@ -91,7 +93,11 @@ class CasAuthComponent extends AuthComponent {
         return parent::startup($controller); 
     } 
 
-    function fetchPersonFromLdap($username) {
+    /**
+     * 如果该用户在本地数据库中不存在，则通过用户名，从 LDAP 服务器获取人员
+     * 的基本信息，并插入到本地数据库中。
+     */
+    function _fetchPersonFromLdap($username) {
         $UserModel = $this->getModel('User');
         $user = $UserModel->findByUsername($username);
         if (!$user) {
@@ -104,6 +110,9 @@ class CasAuthComponent extends AuthComponent {
         }
     }
 
+    /**
+     * 由于在本地数据库中并不缓存用户密码，因此把所有用户密码的密文都设置为'*'
+     */
     function hashPasswords($data) {
         $model =& $this->getModel();
         $data[$model->alias][$this->fields['password']] = '*';
