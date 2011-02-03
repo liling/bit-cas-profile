@@ -5,7 +5,7 @@ App::import('Vendor', 'Password');
 
 class MailActivatesController extends AppController {
 
-    var $components = array('CasAuth', 'Session', 'Email');
+    var $components = array('CasAuth', 'Session', 'Mailer');
     var $uses = array('MailActivate', 'User');
 
     function beforeFilter() {
@@ -20,6 +20,7 @@ class MailActivatesController extends AppController {
 
         if (!empty($this->data['MailActivate'])) {
             $user = $this->CasAuth->user();
+            $user = $this->User->findById($user['User']['id']);
 
             if ($this->data['MailActivate']['mail'] != $this->data['MailActivate']['mail2']) {
                 $this->set('errors', array('mail' => '您两次输入的邮件地址不一致')); 
@@ -35,9 +36,14 @@ class MailActivatesController extends AppController {
                 $this->MailActivate->set('code', $code);
                 if ($this->MailActivate->save()) {
                     $id = $this->MailActivate->getInsertID();
-                    $this->_send_confirm_mail(
-                        $this->data['MailActivate']['mail'],
-                        Router::url("/mail_activates/confirm/$id/$code", true));
+                    try {
+                        $this->_send_confirm_mail(
+                            $this->data['MailActivate']['mail'],
+                            Router::url("/mail_activates/confirm/$id/$code", true));
+                    } catch (Exception $e) {
+                        $this->setFlash('邮件发送失败：'.$e->getMessage());
+                        return $this->render();
+                    }
                     $this->set('mail', $this->data['MailActivate']['mail']);
                     return $this->render('confirmation_mail_sent');
                 } else {
@@ -52,25 +58,15 @@ class MailActivatesController extends AppController {
      * 发送确认信
      */
     function _send_confirm_mail($address, $url) {
-        $this->Email->from = Configure::read('Email.from');
-        $bcc = Configure::read('Email.bcc');
-        if (!empty($bcc)) $this->Email->bcc = $bcc;
-        $this->Email->sendAs = 'both'; //Configure::read('Email.sendAs');
-        $this->Email->delivery = Configure::read('Email.delivery');
-        if ($this->Email->delivery == 'smtp')
-            $this->Email->smtpOptions = Configure::read('SMTP.options');
-
         $user = $this->CasAuth->user();
-        $this->Email->to = $user['User']['fullname'].' <'.$address.'>';
-        $this->Email->subject = '校园网单点登录服务修改邮箱确认信';
+        $this->Mailer->toName = $user['User']['fullname'];
+        $this->Mailer->to = $address;
+        $this->Mailer->subject = '校园网单点登录服务修改邮箱确认信';
         $this->set('user', $user['User']);
         $this->set('mail', $address);
         $this->set('confirm_url', $url);
-        $this->Email->send('', 'mail_activate_confirm', 'default');
-
-        if ($this->Email->smtpError) {
-            $this->Session->setFlash($this->Email->smtpError);
-        }
+        $this->Mailer->template = 'mail_activate_confirm';
+        $this->Mailer->send();
     }
 
     function confirm($id, $code) {
