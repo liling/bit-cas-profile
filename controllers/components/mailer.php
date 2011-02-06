@@ -128,7 +128,9 @@ class MailerComponent
         $mail->AltBody = $this->bodyText(); 
         $mail->MsgHTML($this->bodyHTML()); 
 
+        ob_start();
         $result = $mail->Send(); 
+        ob_end_clean();
 
         if($result == false ) $result = $mail->ErrorInfo; 
 

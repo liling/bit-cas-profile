@@ -36,16 +36,16 @@ class MailActivatesController extends AppController {
                 $this->MailActivate->set('code', $code);
                 if ($this->MailActivate->save()) {
                     $id = $this->MailActivate->getInsertID();
-                    try {
-                        $this->_send_confirm_mail(
-                            $this->data['MailActivate']['mail'],
-                            Router::url("/mail_activates/confirm/$id/$code", true));
-                    } catch (Exception $e) {
-                        $this->setFlash('邮件发送失败：'.$e->getMessage());
+                    $result = $this->_send_confirm_mail(
+                        $this->data['MailActivate']['mail'],
+                        Router::url("/mail_activates/confirm/$id/$code", true));
+                    if ($result === true) {
+                        $this->set('mail', $this->data['MailActivate']['mail']);
+                        return $this->render('confirmation_mail_sent');
+                    } else {
+                        $this->Session->setFlash('邮件发送失败：'.$result);
                         return $this->render();
                     }
-                    $this->set('mail', $this->data['MailActivate']['mail']);
-                    return $this->render('confirmation_mail_sent');
                 } else {
                     $this->set('errors', $this->MailActivate->invalidFields());
                     return $this->render();
@@ -66,7 +66,7 @@ class MailActivatesController extends AppController {
         $this->set('mail', $address);
         $this->set('confirm_url', $url);
         $this->Mailer->template = 'mail_activate_confirm';
-        $this->Mailer->send();
+        return $this->Mailer->send();
     }
 
     function confirm($id, $code) {
