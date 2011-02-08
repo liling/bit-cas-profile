@@ -69,6 +69,9 @@ class MailActivatesController extends AppController {
         return $this->Mailer->send();
     }
 
+    /**
+     * 确认邮件地址修改
+     */
     function confirm($id, $code) {
         $this->set('title_for_layout', '邮件地址确认');
 
@@ -77,13 +80,25 @@ class MailActivatesController extends AppController {
 
         $ma = $this->MailActivate->findById($id);
         if ($ma != null && $ma['MailActivate']['code'] == $code) {
-            $this->User->read('id', $ma['MailActivate']['user_id']);
-            $this->User->set('mail', $ma['MailActivate']['mail']);
-            $this->User->save();
-            $this->MailActivate->delete($id, false);
+
+            // 检查验证码是否过期
+            $now = new DateTime('now');
+            $created = date_create($ma['MailActivate']['created']);
+            $created->add(new DateInterval('P3D'));
+            if ($now <= $created) {
+                $duration = $now->diff($created);
+                $this->User->read('id', $ma['MailActivate']['user_id']);
+                $this->User->set('mail', $ma['MailActivate']['mail']);
+                $this->User->save();
+                $this->MailActivate->delete($id, false);
+            } else {
+                $this->Session->setFlash('Expired');
+                return $this->render('failed');
+            }
 
             return $this->render('succeeded');
         } else {
+            $this->Session->setFlash('Error Code');
             return $this->render('failed');
         }
     }
