@@ -91,6 +91,7 @@ class MailerComponent
 
     function send() { 
         $mail = new PHPMailer(); 
+        ob_start();
 
         $mail->IsSMTP();            // set mailer to use SMTP 
         $mail->SMTPAuth = true;     // turn on SMTP authentication 
@@ -128,7 +129,6 @@ class MailerComponent
         $mail->AltBody = $this->bodyText(); 
         $mail->MsgHTML($this->bodyHTML()); 
 
-        ob_start();
         $result = $mail->Send(); 
         ob_end_clean();
 
