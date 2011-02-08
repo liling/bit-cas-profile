@@ -2,6 +2,7 @@
 
 App::import('Vendor', 'cas', array('file' => 'CAS-1.2.0'.DS.'CAS.php')); 
 App::import('Component', 'Auth'); 
+App::import('Component', 'LdapSync'); 
 App::import('Model', 'Person');
 
 /** 
@@ -85,30 +86,13 @@ class CasAuthComponent extends AuthComponent {
             phpCAS::forceAuthentication(); 
 
             // 认证成功的情况下，从 LDAP 服务器获取相关人员的基本信息
-            $this->_fetchPersonFromLdap(phpCAS::getUser());
+            LdapSyncComponent::CreateUserFromLdap(phpCAS::getUser());
 
             $model =& $this->getModel(); 
             $controller->data[$model->alias][$this->fields['username']] = phpCAS::getUser(); 
         } 
         return parent::startup($controller); 
     } 
-
-    /**
-     * 如果该用户在本地数据库中不存在，则通过用户名，从 LDAP 服务器获取人员
-     * 的基本信息，并插入到本地数据库中。
-     */
-    function _fetchPersonFromLdap($username) {
-        $UserModel = $this->getModel('User');
-        $user = $UserModel->findByUsername($username);
-        if (!$user) {
-            $Person = $this->getModel('Person');
-            $filter = $Person->primaryKey."=".$username; 
-            $person = $Person->find('first', array( 'conditions'=>$filter)); 
-
-            $UserModel->create(array('username' => $username, 'password' => '*', 'fullname' => $person['Person']['cn']));
-            $UserModel->save();
-        }
-    }
 
     /**
      * 由于在本地数据库中并不缓存用户密码，因此把所有用户密码的密文都设置为'*'
