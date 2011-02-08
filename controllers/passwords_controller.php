@@ -9,7 +9,7 @@ class PasswordsController extends AppController {
     var $uses = array('PasswordRecovery', 'User', 'Person');
 
     function beforeFilter() {
-        $this->CasAuth->allow('recovery', 'confirm');
+        $this->CasAuth->allow('recovery', 'recovery_confirm');
     }
 
     /**
@@ -62,59 +62,58 @@ class PasswordsController extends AppController {
         $this->set('title_for_layout', '找回密码');
 
         if (!empty($this->data['Password'])) {
-            $ldap = ConnectionManager::getDataSource('ldap');
-            $rec = $this->data['Password'];
+            try {
+                $rec = $this->data['Password'];
 
-            $user = $this->LdapSync->CreateUserFromLdap($rec['username']);
-            if ($user != null) {
+                $user = $this->LdapSync->CreateUserFromLdap($rec['username']);
+                if ($user == null) {
+                    // 未找到用户
+                    $errors['username'] = '找不到您的账户';
+                    throw new Exception();
+                }
+
                 if (!$user['User']['mail']) {
-                    $this->Session->setFlash('No email for your account');
-                    return $this->render();
+                    throw new Exception('您的帐号没有关联电子邮件');
                 }
 
-                if ($rec['mail'] == $user['User']['mail']) {
-                    // 生成找回密码记录
-                    $code = Password::generate(8, 7);
-                    $this->PasswordRecovery->set('code', $code);
-                    $this->PasswordRecovery->set('user_id', $user->id);
-                    if ($this->PasswordRecovery->save()) {
-                        $id = $this->PasswordRecovery->getInsertID();
-                        $url = Router::url("/passwords/recovery_confirm/$id/$code", true);
-                        // 发送确认邮件
-                        $rst = $this->_send_recovery_mail($user, $url);
-                        if ($rst === true) {
-                            $this->Session->setFlash('Mail sent.');
-                            return $this->render();
-                        } else {
-                            // 未能发送邮件
-                            $this->Session->setFlash('Mail Failed: '. $rst);
-                            return $this->render();
-                        }
-                    } else {
-                        // 保存数据时发生错误
-                        $errors = $this->MailActivate->invalidFields();
-                    }
-                } else {
+                if ($rec['mail'] != $user['User']['mail']) {
                     // 用户的邮件地址不匹配
-                    $errors['mail'] = 'Wrong mail address.';
+                    $errors['mail'] = '您输入的邮件地址不是该账户的关联邮件';
+                    throw new Exception();
                 }
-            } else {
-                // 未找到用户
-                $errors['username'] = 'Wrong username';
+
+                // 生成找回密码记录
+                $code = Password::generate(8, 7);
+                $this->PasswordRecovery->set('code', $code);
+                $this->PasswordRecovery->set('user_id', $user['User']['id']);
+                if (!$this->PasswordRecovery->save()) {
+                    // 保存数据时发生错误
+                    $errors = $this->PasswordRecovery->invalidFields();
+                    throw new Exception('保存数据时发生错误');
+                }
+
+                // 发送确认邮件
+                $id = $this->PasswordRecovery->getInsertID();
+                $url = Router::url("/passwords/recovery_confirm/$id/$code", true);
+                $rst = $this->_send_recovery_mail($user, $url);
+                if ($rst !== true) {
+                    throw new Exception('未能正常发送邮件：'.$rst);
+                }
+                return $this->render('confirm_mail_sent');
+            } catch (Exception $e) {
+                $m = $e->getMessage();
+                if ($m) $this->Session->setFlash($m);
+                $this->set('errors', $errors);
             }
         }
-
-        $this->set('errors', $errors);
-        return $this->render();
     }
 
     /**
      * 向用户的信箱发送修改密码确认信。
      */
     function _send_recovery_mail($user, $url) {
-        $user = $this->CasAuth->user();
         $this->Mailer->toName = $user['User']['fullname'];
-        $this->Mailer->to = $person['mail'];
+        $this->Mailer->to = $user['User']['mail'];
         $this->Mailer->subject = '校园网单点登录服务找回密码确认信';
         $this->set('fullname',  $user['User']['fullname']);
         $this->set('url', $url);
@@ -134,30 +133,66 @@ class PasswordsController extends AppController {
         $id = Sanitize::paranoid($id);
         $code = Sanitize::paranoid($code);
 
-        $ma = $this->PasswordRecovery->findById($id);
-        if ($ma != null && $ma['PasswordRecovery']['code'] == $code) {
-            $this->User->read('id', $ma['PasswordRecovery']['user_id']);
-            $this->User->set('mail', $ma['PasswordRecovery']['mail']);
-            $this->User->save();
-            $this->PasswordRecovery->delete($id, false);
+        try {
+            $pr = $this->PasswordRecovery->findById($id);
+            // 检查验证码是否正确
+            if ($pr == null || $pr['PasswordRecovery']['code'] != $code) {
+                throw new Exception('验证码错误');
+            }
 
-            return $this->render('succeeded');
-        } else {
-            return $this->render('failed');
+            // 检查验证码是否使用过
+            if ($pr['PasswordRecovery']['finished']) {
+                throw new Exception('验证码已经使用过');
+            }
+
+            // 检查验证码是否过期
+            $now = new DateTime('now');
+            $created = date_create($pr['PasswordRecovery']['created']);
+            $created->add(new DateInterval('P3D'));
+            if ($now > $created) {
+                throw new Exception('验证码已经过期，请重新申请验证码');
+            }
+
+            // 重新设置用户密码
+            $user = $this->User->findById($pr['PasswordRecovery']['user_id']);
+            $filter = $this->Person->primaryKey."=".$user['User']['username']; 
+            $person = $this->Person->find('first', array( 'conditions'=>$filter)); 
+            $newpwd = Password::generate(8, 7);
+            $newinfo['userpassword']='{md5}'.base64_encode(pack('H*',md5($newpwd)));
+            $dn = $person['Person']['dn'];
+            $ldap = ConnectionManager::getDataSource('ldap');
+            if (!@ldap_modify($ldap->database, $dn, $newinfo)) {
+                $m = '连接LDAP重设密码失败 - '.@ldap_error($ldap->database);
+                throw new Exception($m);
+            }
+
+            // 将验证码设定为使用过
+            $this->PasswordRecovery->set($pr);
+            $this->PasswordRecovery->set('finished', true);
+            $this->PasswordRecovery->save();
+
+            $rst = $this->_send_new_password_mail($person, $newpwd);
+            if ($rst !== true) {
+                $this->Session->setFlash('通过电子邮件发送密码失败');
+            }
+
+            $this->set('password', $newpwd);
+            return $this->render('recovery_succeed');
+        } catch (Exception $e) {
+            $this->set('reason', $e->getMessage());
+            return $this->render('recovery_failed');
         }
     }
 
     /**
      * 发送新密码到用户的邮箱。
      */
-    function _send_new_password_mail($address) {
-        $user = $this->CasAuth->user();
-        $this->Mailer->toName = $user['User']['fullname'];
-        $this->Mailer->to = $address;
-        $this->Mailer->subject = '校园网单点登录服务找回密码确认信';
-        $this->set('user', $user['User']);
-        $this->set('mail', $address);
-        $this->set('confirm_url', $url);
+    function _send_new_password_mail($person, $password) {
+        $this->Mailer->toName = $person['Person']['cn'];
+        $this->Mailer->to = $person['Person']['mail'];
+        $this->Mailer->subject = '校园网单点登录服务新密码';
+        $this->set('fullname', $person['Person']['cn']);
+        $this->set('password', $password);
         $this->Mailer->template = 'new_password';
         return $this->Mailer->send();
     }
