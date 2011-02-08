@@ -86,7 +86,6 @@ class MailActivatesController extends AppController {
             $created = date_create($ma['MailActivate']['created']);
             $created->add(new DateInterval('P3D'));
             if ($now <= $created) {
-                $duration = $now->diff($created);
                 $this->User->read('id', $ma['MailActivate']['user_id']);
                 $this->User->set('mail', $ma['MailActivate']['mail']);
                 $this->User->save();
