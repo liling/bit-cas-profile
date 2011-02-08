@@ -5,7 +5,7 @@ App::import('Vendor', 'Password');
 
 class PasswordsController extends AppController {
 
-    var $components = array('CasAuth', 'Session', 'Email');
+    var $components = array('CasAuth', 'Session', 'Mailer', 'LdapSync');
     var $uses = array('PasswordRecovery', 'User', 'Person');
 
     function beforeFilter() {
@@ -23,9 +23,9 @@ class PasswordsController extends AppController {
      */
     function change() {
         $this->set('title_for_layout', '修改密码');
-        $ldap = ConnectionManager::getDataSource('ldap');
 
         if (!empty($this->data['Password'])) {
+            $ldap = ConnectionManager::getDataSource('ldap');
             $user = $this->CasAuth->user();
             $pwd = $this->data['Password'];
             if ($pwd['new'] != $pwd['new2']) {
@@ -58,24 +58,68 @@ class PasswordsController extends AppController {
      * 正确。如果用户输入的信息匹配，则向用户的电子信箱发送修改密码确认信。
      */
     function recovery() {
+        $errors = array();
+        $this->set('title_for_layout', '找回密码');
 
+        if (!empty($this->data['Password'])) {
+            $ldap = ConnectionManager::getDataSource('ldap');
+            $rec = $this->data['Password'];
+
+            $user = $this->LdapSync->CreateUserFromLdap($rec['username']);
+            if ($user != null) {
+                if (!$user['User']['mail']) {
+                    $this->Session->setFlash('No email for your account');
+                    return $this->render();
+                }
+
+                if ($rec['mail'] == $user['User']['mail']) {
+                    // 生成找回密码记录
+                    $code = Password::generate(8, 7);
+                    $this->PasswordRecovery->set('code', $code);
+                    $this->PasswordRecovery->set('user_id', $user->id);
+                    if ($this->PasswordRecovery->save()) {
+                        $id = $this->PasswordRecovery->getInsertID();
+                        $url = Router::url("/passwords/recovery_confirm/$id/$code", true);
+                        // 发送确认邮件
+                        $rst = $this->_send_recovery_mail($user, $url);
+                        if ($rst === true) {
+                            $this->Session->setFlash('Mail sent.');
+                            return $this->render();
+                        } else {
+                            // 未能发送邮件
+                            $this->Session->setFlash('Mail Failed: '. $rst);
+                            return $this->render();
+                        }
+                    } else {
+                        // 保存数据时发生错误
+                        $errors = $this->MailActivate->invalidFields();
+                    }
+                } else {
+                    // 用户的邮件地址不匹配
+                    $errors['mail'] = 'Wrong mail address.';
+                }
+            } else {
+                // 未找到用户
+                $errors['username'] = 'Wrong username';
+            }
+        }
+
+        $this->set('errors', $errors);
+        return $this->render();
     }
 
     /**
      * 向用户的信箱发送修改密码确认信。
      */
-    function _send_recovery_mail($address) {
-        $this->Email->from = '系统自动生成邮件.请勿回复 <no-reply@bit.edu.cn>';
-        $this->Email->to = $address;
-        $this->Email->bcc = 'liling@bit.edu.cn';
-        $this->Email->subject = '校园网单点登录服务找回密码确认信';
-        $this->Email->template = 'password_recovery';
-        $this->Email->sendAs = 'both';
-
-        $this->Email->delivery = Configure::read('Email.delivery');
-        if ($this->Email->delivery == 'smtp')
-            $this->Email->smtpOptions = Configure::read('SMTP.options');
-        $this->Email->send();
+    function _send_recovery_mail($user, $url) {
+        $user = $this->CasAuth->user();
+        $this->Mailer->toName = $user['User']['fullname'];
+        $this->Mailer->to = $person['mail'];
+        $this->Mailer->subject = '校园网单点登录服务找回密码确认信';
+        $this->set('fullname',  $user['User']['fullname']);
+        $this->set('url', $url);
+        $this->Mailer->template = 'password_recovery';
+        return $this->Mailer->send();
     }
 
     /**
@@ -84,8 +128,8 @@ class PasswordsController extends AppController {
      * 如果成功确认用户身份，则自动生成一个新密码显示在屏幕上，同时向用户的邮
      * 箱发送一封邮件以告知用户密码已经修改。
      */
-    function confirm($id, $code) {
-        $this->set('title_for_layout', '确认密码修改');
+    function recovery_confirm($id, $code) {
+        $this->set('title_for_layout', '找回密码确认');
 
         $id = Sanitize::paranoid($id);
         $code = Sanitize::paranoid($code);
@@ -107,17 +151,15 @@ class PasswordsController extends AppController {
      * 发送新密码到用户的邮箱。
      */
     function _send_new_password_mail($address) {
-        $this->Email->from = '系统自动生成邮件.请勿回复 <no-reply@bit.edu.cn>';
-        $this->Email->to = $address;
-        $this->Email->bcc = 'liling@bit.edu.cn';
-        $this->Email->subject = '校园网单点登录服务新密码';
-        $this->Email->template = 'new_password';
-        $this->Email->sendAs = 'both';
-
-        $this->Email->delivery = Configure::read('Email.delivery');
-        if ($this->Email->delivery == 'smtp')
-            $this->Email->smtpOptions = Configure::read('SMTP.options');
-        $this->Email->send();
+        $user = $this->CasAuth->user();
+        $this->Mailer->toName = $user['User']['fullname'];
+        $this->Mailer->to = $address;
+        $this->Mailer->subject = '校园网单点登录服务找回密码确认信';
+        $this->set('user', $user['User']);
+        $this->set('mail', $address);
+        $this->set('confirm_url', $url);
+        $this->Mailer->template = 'new_password';
+        return $this->Mailer->send();
     }
 
 }
