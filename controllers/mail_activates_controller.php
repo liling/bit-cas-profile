@@ -79,25 +79,35 @@ class MailActivatesController extends AppController {
         $code = Sanitize::paranoid($code);
 
         $ma = $this->MailActivate->findById($id);
-        if ($ma != null && $ma['MailActivate']['code'] == $code) {
+        try {
+            // 检查验证码是否正确
+            if (empty($ma) || $ma['MailActivate']['code'] != $code) {
+                throw new Exception('验证码错误');
+            }
+
+            // 检查验证码是否使用过
+            if ($ma['MailActivate']['finished']) {
+                throw new Exception('验证码已经使用过');
+            }
 
             // 检查验证码是否过期
             $now = new DateTime('now');
             $created = date_create($ma['MailActivate']['created']);
             $created->add(new DateInterval('P3D'));
-            if ($now <= $created) {
-                $this->User->read('id', $ma['MailActivate']['user_id']);
-                $this->User->set('mail', $ma['MailActivate']['mail']);
-                $this->User->save();
-                $this->MailActivate->delete($id, false);
-            } else {
-                $this->Session->setFlash('Expired');
-                return $this->render('failed');
+            if ($now > $created) {
+                throw new Exception('验证码已过期');
             }
 
+            $this->User->read('id', $ma['MailActivate']['user_id']);
+            $this->User->set('mail', $ma['MailActivate']['mail']);
+            $this->User->save();
+            $this->MailActivate->set($ma);
+            $this->MailActivate->set('finished', true);
+            $this->MailActivate->save();
+
             return $this->render('succeeded');
-        } else {
-            $this->Session->setFlash('Error Code');
+        } catch (Exception $e) {
+            $this->set('reason', $e->getMessage());
             return $this->render('failed');
         }
     }
