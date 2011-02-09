@@ -12,44 +12,61 @@ class MailActivatesController extends AppController {
         $this->CasAuth->allow('confirm');
     }
 
+    function index() {
+        return $this->flash('跳转中', '/mail_activates/setmail', 0);
+    }
+
     /**
      * 设定邮件地址，用户提交请求后，系统发送邮件到用户的邮箱。
      */
     function setmail() {
-        $this->set('title_for_layout', '修改邮件地址');
+        $this->set('title_for_layout', '修改密保邮件地址');
 
         if (!empty($this->data['MailActivate'])) {
-            $user = $this->CasAuth->user();
-            $user = $this->User->findById($user['User']['id']);
+            $d = $this->data['MailActivate'];
+            $errors = array();
+            try {
+                if (empty($d['mail'])) {
+                    $errors['mail'] = '您必须输入一个邮件地址';
+                    throw new Exception();
+                }
 
-            if ($this->data['MailActivate']['mail'] != $this->data['MailActivate']['mail2']) {
-                $this->set('errors', array('mail' => '您两次输入的邮件地址不一致')); 
-                return $this->render();
-            }
+                if ($d['mail'] != $d['mail2']) {
+                    $errors['mail2'] = '您两次输入的邮件地址不一致';
+                    throw new Exception();
+                }
+ 
+                $user = $this->CasAuth->user();
+                $user = $this->User->findById($user['User']['id']);
+                if ($user['User']['mail'] == $d['mail']) {
+                    $errors['mail'] = '此邮件地址就是您原来的密保邮件地址';
+                    throw new Exception();
+                }
 
-            if (empty($user['User']['mail']) ||
-                $user['User']['mail'] != $this->data['MailActivate']['mail'])
-            {
+                // 生成验证码
+                $code = Password::generate(8, 7);
                 $this->MailActivate->set($this->data);
                 $this->MailActivate->set('user_id', $user['User']['id']);
-                $code = Password::generate(8, 7);
                 $this->MailActivate->set('code', $code);
-                if ($this->MailActivate->save()) {
-                    $id = $this->MailActivate->getInsertID();
-                    $result = $this->_send_confirm_mail(
-                        $this->data['MailActivate']['mail'],
-                        Router::url("/mail_activates/confirm/$id/$code", true));
-                    if ($result === true) {
-                        $this->set('mail', $this->data['MailActivate']['mail']);
-                        return $this->render('confirmation_mail_sent');
-                    } else {
-                        $this->Session->setFlash('邮件发送失败：'.$result);
-                        return $this->render();
-                    }
-                } else {
-                    $this->set('errors', $this->MailActivate->invalidFields());
-                    return $this->render();
+                if (!$this->MailActivate->save()) {
+                    $errors = $this->MailActivate->invalidFields();
+                    throw new Exception();
                 }
+
+                $id = $this->MailActivate->getInsertID();
+                $url = Router::url("/mail_activates/confirm/$id/$code", true);
+                $result = $this->_send_confirm_mail($d['mail'], $url);
+                if ($result !== true) {
+                    throw new Exception('邮件发送失败：'.$result);
+                }
+
+                $this->set('mail', $this->data['MailActivate']['mail']);
+                return $this->render('confirmation_mail_sent');
+
+            } catch (Exception $e) {
+                $m = $e->getMessage();
+                if (!empty($m)) $this->setFlash($m);
+                $this->set('errors', $errors);
             }
         }
     }
@@ -72,14 +89,19 @@ class MailActivatesController extends AppController {
     /**
      * 确认邮件地址修改
      */
-    function confirm($id, $code) {
-        $this->set('title_for_layout', '邮件地址确认');
+    function confirm($id = 0, $code = null) {
+        $this->set('title_for_layout', '密保邮件地址确认');
 
-        $id = Sanitize::paranoid($id);
-        $code = Sanitize::paranoid($code);
-
-        $ma = $this->MailActivate->findById($id);
         try {
+            if ($code == null) {
+                throw new Exception('请提供验证码');
+            }
+
+            $id = Sanitize::paranoid($id);
+            $code = Sanitize::paranoid($code);
+
+            $ma = $this->MailActivate->findById($id);
+
             // 检查验证码是否正确
             if (empty($ma) || $ma['MailActivate']['code'] != $code) {
                 throw new Exception('验证码错误');

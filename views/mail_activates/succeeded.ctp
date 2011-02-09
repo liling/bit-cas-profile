@@ -1,3 +1,5 @@
-<h2><?php echo $title_for_page; ?></h2>
+<div class="succeeded">
+    <?php echo $this->Html->image('tick.jpg', array('alt' => __('成功', true), 'class' => 'tick')); ?>
 
-<p>您的邮件地址已经成功修改。当您的密码丢失时，您可以通过该邮件地址重置密码。</p>
+    <p><?php __('您的密保邮件地址已经成功修改。'); ?></p>
+</div>

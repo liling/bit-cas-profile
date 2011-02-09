@@ -115,6 +115,7 @@ em {
 }
 
 #content > hr {
+    margin-top: 20px;
     clear: both;
     border-top: 1px solid #cccccc;
     border-bottom: 0;

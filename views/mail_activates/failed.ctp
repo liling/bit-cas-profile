@@ -1,3 +1,5 @@
-<h2><?php echo $title_for_page; ?></h2>
+<div class="failed">
+    <?php echo $this->Html->image('cross.jpg', array('alt' => __('失败', true), 'class' => 'cross')); ?>
 
-<p>未能通过邮件地址验证：<?php echo $reason; ?></p>
+    <p><?php echo __('未能修改密保邮件：', true).$reason; ?></p>
+</div>
