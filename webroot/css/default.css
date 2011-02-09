@@ -13,15 +13,36 @@ body {
 #header {
     padding: 0;
     margin: 0;
+    background: none repeat scroll 0 0 #9BC11B;
+}
+
+#header #header-wrapper {
+    width: 770px;
+    margin: 0 auto;
 }
 
 #header h1 {
-    background: none repeat scroll 0 0 #9BC11B;
     color: black;
     font: 400 16px "微软雅黑","宋体",Arial,sans-serif;
     margin: 0 auto;
-    padding: 4px;
-    text-align: center;
+    padding: 6px 0 4px;
+    float: left;
+}
+
+#header ul {
+    float: right;
+    list-style-type: none;
+}
+
+#header ul li {
+    float: left;
+    margin-right: 10px;
+}
+
+#header > hr {
+    clear: both;
+    color: #9BC11B;
+    border: 0;
 }
 
 h2 {
@@ -152,4 +173,14 @@ em {
     padding: 10px;
     color: white;
     margin: 20px auto;
+}
+
+.menu a {
+    color: blue;
+    text-decoration: none;
+}
+
+.menu a:hover {
+    color: blue;
+    text-decoration: underline;
 }
