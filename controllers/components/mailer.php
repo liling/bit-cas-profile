@@ -137,4 +137,3 @@ class MailerComponent
         return $result; 
     } 
 } 
-?>

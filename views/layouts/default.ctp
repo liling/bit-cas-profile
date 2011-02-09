@@ -19,7 +19,11 @@
 <body>
 	<div id="container">
 		<div id="header">
-			<h1><?php echo __('校园网单点登录服务', true).' - '.$title_for_layout; ?></h1>
+			<div id="header-wrapper">
+                <h1><?php echo __('校园网单点登录服务', true).' - '.$title_for_layout; ?></h1>
+                <?php echo $this->element('menu'); ?>
+            </div>
+            <hr />
 		</div>
 		<div id="content">
 

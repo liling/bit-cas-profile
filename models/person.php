@@ -52,5 +52,3 @@ class Person extends AppModel {
     ); 
 
 } 
-?>
-

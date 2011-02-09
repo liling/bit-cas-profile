@@ -1310,4 +1310,3 @@ class LdapSource extends DataSource {
 		$this->SchemaDN = $schemaEntry[0]['subschemasubentry'][0];
 	}
 } // LdapSource
-?>

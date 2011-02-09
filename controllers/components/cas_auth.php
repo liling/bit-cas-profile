@@ -126,5 +126,3 @@ class CasAuthComponent extends AuthComponent {
     } 
      
 } 
-
-?>
