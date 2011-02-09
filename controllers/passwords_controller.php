@@ -12,6 +12,10 @@ class PasswordsController extends AppController {
         $this->CasAuth->allow('recovery', 'recovery_confirm');
     }
 
+    function index() {
+        return $this->flash('跳转到修改密码页面', '/passwords/change', 0);
+    }
+
     /**
      * 修改密码。
      *
@@ -25,32 +29,47 @@ class PasswordsController extends AppController {
         $this->set('title_for_layout', '修改密码');
 
         if (!empty($this->data['Password'])) {
-            $ldap = ConnectionManager::getDataSource('ldap');
-            $user = $this->CasAuth->user();
             $pwd = $this->data['Password'];
-            if ($pwd['new'] != $pwd['new2']) {
-                $this->set('errors',
-                           array('new2' => '您两次输入的密码不一致')); 
-                return $this->render();
-            }
+            $errors = array();
 
-            $filter = $this->Person->primaryKey.'='.$user['User']['username'];
-            $person = $this->Person->find('first', array('conditions'=>$filter));
-            $r = $ldap->auth($person['Person']['dn'], $pwd['old']);
-            if ($r === true) {
-                $newinfo['userpassword']='{md5}'.base64_encode(pack('H*',md5($pwd['new'])));
-                if (@ldap_modify($ldap->database, $person['Person']['dn'], $newinfo)) {
-                    $this->Session->setFlash('密码修改成功');
-                    return $this->render();
-                } else {
-                    $this->Session->setFlash('无法连接LDAP数据库修改密码：'.@ldap_error($ldap->database));
-                    return $this->render();
+            try {
+                if (empty($pwd['new'])) {
+                    $errors['new'] = '您必须输入新密码';
+                    throw new Exception();
                 }
-            } else {
-                $this->set('errors', array('old' => '旧密码错误')); 
-                return $this->render();
+
+                if ($pwd['new'] != $pwd['new2']) {
+                    $errors['new2'] = '您两次输入的密码不一致'; 
+                    throw new Exception();
+                }
+
+                // 检查用户输入的密码是否正确
+                $user = $this->CasAuth->user();
+                $filter = $this->Person->primaryKey.'='.$user['User']['username'];
+                $person = $this->Person->find('first', array('conditions'=>$filter));
+                $ldap = ConnectionManager::getDataSource('ldap');
+                $r = $ldap->auth($person['Person']['dn'], $pwd['old']);
+                if ($r !== true) {
+                    $errors['old'] = '旧密码错误';
+                    throw new Exception();
+                }
+
+                // 用户输入的密码正确
+                $newinfo['userpassword']='{md5}'.base64_encode(pack('H*',md5($pwd['new'])));
+                if (!@ldap_modify($ldap->database, $person['Person']['dn'], $newinfo)) {
+                    throw new Exception('无法连接LDAP数据库修改密码：'.@ldap_error($ldap->database));
+                }
+
+                return $this->render('change_succeeded');
+
+            } catch (Exception $e) {
+                $m = $e->getMessage();
+                if (!empty($m)) $this->Session->setFlash($m);
+                $this->set('errors', $errors);
             }
         }
+
+        return $this->render();
     }
 
     /**
@@ -73,12 +92,12 @@ class PasswordsController extends AppController {
                 }
 
                 if (!$user['User']['mail']) {
-                    throw new Exception('您的帐号没有关联电子邮件');
+                    throw new Exception('您的帐号没有设置密保邮件');
                 }
 
                 if ($rec['mail'] != $user['User']['mail']) {
                     // 用户的邮件地址不匹配
-                    $errors['mail'] = '您输入的邮件地址不是该账户的关联邮件';
+                    $errors['mail'] = '此地址不是该账户的密保邮件地址';
                     throw new Exception();
                 }
 

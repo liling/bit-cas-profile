@@ -1,12 +1,36 @@
-<h1><?php echo $title_for_layout; ?></h1>
+<div id="column1" class="description">
+<?php echo $this->element("languages/$locale/password_recovery_description"); ?>
+</div>
 
-<?php echo $form->create('Password'); ?>
+<div id="column2">
+    <?php
+        $this->Js->get('div.box');
+        $this->Js->each('$(this).corner();', true);
+    ?>
+    <div class="form box">
+        <?php echo $form->create('Password'); ?>
 
-输入工号/学号: <?php echo $form->text('username', array('size' => 10, 'class' => 'username')); ?>
-<p><?php if (!empty($errors['username'])) echo $errors['username']; ?></p>
-输入邮件地址: <?php echo $form->text('mail', array('size' => 30, 'class' => 'mail')); ?>
-<p><?php if (!empty($errors['mail'])) echo $errors['mail']; ?></p>
+        <div class="header">
+            <?php echo __('请输入工号/学号和密保邮件地址'); ?>
+        </div>
 
-<?php echo $form->button('Send Recovery Mail', array('type' => 'submit')); ?>
+        <div class="item">
+            <label><?php echo __('输入工号/学号:', true); ?></label>
+            <?php echo $form->text('username', array('size' => 10, 'class' => 'username required')); ?>
+            <p class="error"><?php if (!empty($errors['username'])) echo $errors['username']; ?></p>
+        </div>
 
-<?php echo $form->end(); ?>
+        <div class="item">
+            <label><?php echo __('输入密保邮件地址:', true); ?></label>
+            <?php echo $form->text('mail', array('size' => 30, 'class' => 'mail required')); ?>
+            <p class="error"><?php if (!empty($errors['mail'])) echo $errors['mail']; ?></p>
+        </div>
+
+        <div class="footer">
+            <?php echo $form->button(__('提交', true), array('type' => 'submit')); ?>
+            <?php echo $form->button(__('清空', true), array('type' => 'button', 'id' => 'reset')); ?>
+        </div>
+
+        <?php echo $form->end(); ?>
+    </div>
+</div>

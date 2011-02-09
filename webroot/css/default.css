@@ -1,0 +1,154 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: white;
+    font-size: 14px;
+    min-width: 770px;
+    color: #333333;
+}
+
+#header {
+    padding: 0;
+    margin: 0;
+}
+
+#header h1 {
+    background: none repeat scroll 0 0 #9BC11B;
+    color: black;
+    font: 400 16px "微软雅黑","宋体",Arial,sans-serif;
+    margin: 0 auto;
+    padding: 4px;
+    text-align: center;
+}
+
+h2 {
+    color: #250517;
+}
+
+h3 {
+    color: #333333;
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+ol, ul {
+    padding: 0.2em 0 0.2em 1.5em;
+}
+
+li {
+    padding: 0.2em 0;
+}
+
+em {
+    color: #662200;
+    text-decoration: underline;
+    font-style: normal;
+}
+
+.form {
+    background: #eeeeee;
+    padding: 15px; 
+}
+
+.form div {
+    padding: 0.5em 0; 
+}
+
+.form .header {
+    color: #333333;
+    border-bottom: 1px solid #dddddd;
+    font-size: 16px;
+    padding: 3px 0; 
+}
+
+.form .footer {
+    margin-top: 15px;
+    border-top: 1px solid #dddddd;
+}
+
+.form p {
+    margin: 2px 0;
+}
+
+.form label {
+    display: block;
+    margin: 2px 0;
+}
+
+.form input {
+    width: 90%;
+    height: 2em;
+    margin: 3px 0;
+}
+
+.form button {
+    margin-right: 10px;
+}
+
+.form input.required {
+    border-width: 1px;
+}
+
+.form .required {
+    background: #FFFFDD;
+}
+
+#content {
+    margin: 20px auto 5px;
+    max-width: 770px;
+}
+
+#column1 {
+    float: left;
+    width: 450px;
+    margin-bottom: 20px;
+}
+
+#column2 {
+    float: right;
+    width: 300px;
+    margin-bottom: 20px;
+}
+
+#content > hr {
+    clear: both;
+    border-top: 1px solid #cccccc;
+    border-bottom: 0;
+}
+
+#footer {
+    margin: 0 auto;
+    padding: 5px;
+    text-align: center;
+    font-size: 9pt;
+}
+
+.description {
+    line-height: 1.5em;
+}
+
+.error {
+    color: #660000;
+
+}
+
+.succeeded, .failed {
+    text-align: center;
+    font-size: 2em;
+}
+
+.succeeded .tick, .failed .cross {
+    margin: 20px;
+}
+
+#flashMessage {
+    font-size: 1.5em;
+    background: #662200;    
+    padding: 10px;
+    color: white;
+    margin: 20px auto;
+}
