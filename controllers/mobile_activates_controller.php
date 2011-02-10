@@ -6,7 +6,7 @@ class MobileActivatesController extends AppController {
 
     var $name = 'MobileActivates';
 
-    var $components = array('CasAuth', 'Session');
+    var $components = array('CasAuth', 'Session', 'LdapSync');
     var $uses = array('MobileActivate', 'User', 'SmsLog');
 
     function index() {
@@ -50,6 +50,7 @@ class MobileActivatesController extends AppController {
 
                 $id = $this->MobileActivate->getInsertID();
                 $this->data = $this->MobileActivate->findById($id);
+                return $this->flash('已向您的手机发送验证码，请查收', '/mobile_activates/setmobile', 3);
             } catch (Exception $e) {
                 $m = $e->getMessage();
                 if (!empty($m)) $this->Session->setFlash($m);
@@ -83,8 +84,7 @@ class MobileActivatesController extends AppController {
 
         try {
             if (empty($this->data['MobileActivate']['checkcode'])) {
-                $this->Session->setFlash('请输入验证码');
-                $this->redirect('/mobile_activates/setmobile');
+                throw new Exception('请输入验证码');
             }
 
             $user = $this->CasAuth->user(); 
@@ -133,13 +133,18 @@ class MobileActivatesController extends AppController {
             }
 
             // 保存手机号到 LDAP
+            $rst = $this->LdapSync->updateUser($user['User']['username'], 'mobile', $ma['MobileActivate']['mobile']);
+            if ($rst !== true) {
+                throw new Exception('将数据保存到LDAP时失败: '.$rst);
+            }
 
             return $this->render('succeeded');
         } catch (Exception $e) {
             $m = $e->getMessage();
             if ($m) $this->Session->setFlash($m);
-            return $this->redirect('/mobile_activates/setmobile');
         }
+
+        $this->redirect($this->referer());
     }
 
     /**
@@ -188,7 +193,7 @@ class MobileActivatesController extends AppController {
             if (!empty($m)) $this->Session->setFlash($m);
         }
 
-        return $this->redirect('/mobile_activates/setmobile');
+        $this->redirect($this->referer());
     }
 
     /**
@@ -218,7 +223,7 @@ class MobileActivatesController extends AppController {
             if (!empty($m)) $this->Session->setFlash($m);
         }
 
-        return $this->redirect('/mobile_activates/setmobile');
+        $this->redirect($this->referer());
     }
 
     /**
