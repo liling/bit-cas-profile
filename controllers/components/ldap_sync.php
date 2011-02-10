@@ -1,6 +1,6 @@
 <?php
 
-class LdapSyncComponent extends Component { 
+class LdapSyncComponent extends Object { 
 
     /**
      * 如果该用户在本地数据库中不存在，则通过用户名，从 LDAP 服务器获取人员
@@ -23,4 +23,18 @@ class LdapSyncComponent extends Component {
         return $user;
     }
 
+    function updateUser($username, $key, $value) {
+        $Person = &ClassRegistry::init('Person');
+        $filter = $Person->primaryKey."=".$username; 
+        $person = $Person->find('first', array( 'conditions'=>$filter)); 
+        $dn = $person['Person']['dn'];
+
+        $newinfo[$key] = $value;
+        $ldap = ConnectionManager::getDataSource('ldap');
+        if (!@ldap_modify($ldap->database, $dn, $newinfo)) {
+            return @ldap_error($ldap->database);
+        }
+
+        return true;
+    }
 }
