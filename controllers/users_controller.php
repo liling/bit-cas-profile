@@ -33,10 +33,11 @@ class UsersController extends AppController {
 
     function photo() {
         $this->autoRender = false;
+        $this->RequestHandler->respondAs('image/jpeg');
+
         $user = $this->CasAuth->user();
         $filter = $this->Person->primaryKey.'='.$user['User']['username'];
         $person = $this->Person->find('first', array('conditions'=>$filter));
-        $this->RequestHandler->respondAs('image/jpeg');
         if (!empty($person['Person']['jpegphoto'])) {
             echo $person['Person']['jpegphoto'];
         } else {

@@ -135,6 +135,18 @@ em {
     margin-bottom: 20px;
 }
 
+#column3 {
+    float: left;
+    width: 300px;
+    margin-bottom: 20px;
+}
+
+#column4 {
+    float: right;
+    width: 450px;
+    margin-bottom: 20px;
+}
+
 #content > hr {
     margin-top: 20px;
     clear: both;
