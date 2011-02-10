@@ -5,7 +5,7 @@ App::import('Vendor', 'Password');
 
 class MailActivatesController extends AppController {
 
-    var $components = array('CasAuth', 'Session', 'Mailer');
+    var $components = array('CasAuth', 'Session', 'Mailer', 'LdapSync');
     var $uses = array('MailActivate', 'User');
 
     function beforeFilter() {
@@ -122,10 +122,20 @@ class MailActivatesController extends AppController {
 
             $this->User->read('id', $ma['MailActivate']['user_id']);
             $this->User->set('mail', $ma['MailActivate']['mail']);
-            $this->User->save();
+            if (!$this->User->save()) {
+                throw new Exception('保存到数据库时失败');
+            }
             $this->MailActivate->set($ma);
             $this->MailActivate->set('finished', true);
-            $this->MailActivate->save();
+            if (!$this->MailActivate->save()) {
+                throw new Exception('保存到数据库时失败');
+            }
+
+            $user = $this->User->findById($ma['MailActivate']['user_id']);
+            $rst = $this->LdapSync->updateUser($user['User']['username'], 'mail', $ma['MailActivate']['mail']);
+            if ($rst !== true) {
+                throw new Exception('保存到LDAP时失败：'.$rst);
+            }
 
             return $this->render('succeeded');
         } catch (Exception $e) {
