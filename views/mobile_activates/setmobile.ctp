@@ -6,7 +6,7 @@
     <?php if (empty($this->data['MobileActivate']['id'])): ?>
     <div class="header"><?php echo $title_for_layout; ?> - <?php __('输入手机号码'); ?></div>
 
-    <?php echo $form->create('MobileActivate'); ?>
+    <?php echo $form->create('MobileActivate', array('action' => 'setmobile')); ?>
     <div class="item">
         <label for="mobile"><?php __('输入手机号码:') ?></label>
         <?php echo $form->text('mobile', array('maxlength' => 11, 'class' => 'mobile required')); ?>
