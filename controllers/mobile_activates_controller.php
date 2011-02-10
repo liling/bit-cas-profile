@@ -7,7 +7,7 @@ class MobileActivatesController extends AppController {
     var $name = 'MobileActivates';
 
     var $components = array('CasAuth', 'Session');
-    var $uses = array('MobileActivate', 'User');
+    var $uses = array('MobileActivate', 'User', 'SmsLog');
 
     function index() {
         return $this->flash('跳转中', '/mobile_activates/setmobile', 0);
@@ -175,7 +175,7 @@ class MobileActivatesController extends AppController {
             $code = $ma['MobileActivate']['code'];
             $rst = $this->_send_short_message($mobile, $code);
             if ($rst !== true) {
-                throw new Exception('短信发送失败');
+                throw new Exception('未能成功发送手机短信：'.$rst);
             }
             $this->MobileActivate->set(
                 'send_times', $ma['MobileActivate']['send_times'] + 1);
@@ -228,7 +228,37 @@ class MobileActivatesController extends AppController {
      * @param $code 验证码
      */
     function _send_short_message($mobile, $code) {
-        return true;
+        $message = sprintf('您在校园网单点登录服务的密保手机验证码为: %s', $code);
+
+        $username = Configure::read('SMS.username');
+        $password = Configure::read('SMS.password');
+        $send_url = "http://www.xunsai.net:8000/?user=$username&password=$password&phonenumber=%s&text=%s&charset=utf-8";
+
+        $url = sprintf($send_url, urlencode($mobile), urlencode($message));
+        $output = file_get_contents($url);
+        if ($output) {
+            $output = iconv('GB2312', 'UTF-8', $output);
+
+            $sms = array('phone' => $mobile, 'message' => $message,
+                         'url' => $url, 'output' => $output);
+            $this->SmsLog->set(array('SmsLog' => $sms));
+            $this->SmsLog->save();
+
+            ereg("<TITLE>(.*)</TITLE>", $output, $regs);
+            if (!empty($regs)) {
+                $result = $regs[1];
+            } else {
+                $result = '未知错误';
+            }
+        } else {
+            $result = '网络故障，无法连接短信服务器';
+        }
+
+        if ($result == '您所发送的信息已经成功提交') {
+            $result = true;
+        }
+
+        return $result;
     }
 
 }
