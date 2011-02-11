@@ -95,6 +95,13 @@ class PasswordsController extends AppController {
                     $rec['via'] = 'mail';
                 }
 
+                if ($this->Session->read('captcha') != $rec['captcha']) {
+                    $errors['captcha'] = '验证码错误，请重试';
+                    throw new Exception();
+                } else {
+                    unset ($_SESSION['captcha']);
+                }
+
                 $user = $this->LdapSync->CreateUserFromLdap($rec['username']);
                 if ($user == null) {
                     // 未找到用户

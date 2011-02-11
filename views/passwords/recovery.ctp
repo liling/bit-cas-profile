@@ -26,6 +26,13 @@
             <p class="error"><?php if (!empty($errors['mail'])) echo $errors['mail']; ?></p>
         </div>
 
+        <div class="item">
+            <?php echo $html->image('/users/captcha', array('style' => 'float: right; border: 0;')); ?>
+            <label><?php echo __('输入图片中的内容:', true); ?></label>
+            <?php echo $form->text('captcha', array('size' => 8, 'class' => 'captcha required', 'value' => '')); ?>
+            <p class="error"><?php if (!empty($errors['captcha'])) echo $errors['captcha']; ?></p>
+        </div>
+
         <div class="footer">
             <?php echo $form->button(__('提交', true), array('type' => 'submit')); ?>
         </div>
