@@ -31,8 +31,12 @@
             <p class="error"><?php if (!empty($errors['mail'])) echo $errors['mail']; ?></p>
         </div>
 
+        <?php
+            $js->get('#captcha');
+            $js->event('click', '$(this).attr("src", "'.$html->url('/users/captcha', true).'/" + Math.random());', true);
+        ?>
         <div class="item">
-            <?php echo $html->image('/users/captcha', array('style' => 'float: right; border: 0;')); ?>
+            <?php echo $html->image('/users/captcha', array('id' => 'captcha', 'style' => 'float: right; border: 0;', 'title' => '若看不清可单击图片更换')); ?>
             <label><?php echo __('输入图片中的验证码:', true); ?></label>
             <?php echo $form->text('captcha', array('size' => 8, 'class' => 'captcha required', 'value' => '')); ?>
             <p class="error"><?php if (!empty($errors['captcha'])) echo $errors['captcha']; ?></p>
