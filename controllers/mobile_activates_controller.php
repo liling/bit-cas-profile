@@ -21,6 +21,12 @@ class MobileActivatesController extends AppController {
         $errors = array();
 
         $user = $this->CasAuth->user();
+        $user = $this->User->findById($user['User']['id']);
+        // 如果已经加锁，则直接跳出
+        if ($user['User']['mobile_locked']) {
+            $this->flash('您的密保手机号处于锁定状态，请先解锁', '/users/view', 3);
+        }
+
         if (!empty($this->data['MobileActivate'])) {
             try {
                 $uid = $user['User']['id'];
@@ -37,6 +43,7 @@ class MobileActivatesController extends AppController {
                 $this->MobileActivate->set($this->data);
                 $this->MobileActivate->set('user_id', $uid);
                 $this->MobileActivate->set('code', $code);
+                $questions = Configure::read('Profile.unlockQuestions');
                 if (!$this->MobileActivate->save()) {
                     $errors = $this->MobileActivate->invalidFields();
                     throw new Exception();
@@ -62,8 +69,12 @@ class MobileActivatesController extends AppController {
                 array('conditions' => "MobileActivate.user_id=$uid AND 
                                        MobileActivate.finished=0",
                       'order' => 'MobileActivate.created DESC'));
+            $this->data['MobileActivate']['mobile'] = $user['User']['mobile'];
+            $this->data['MobileActivate']['unlock_question'] = $user['User']['unlock_question'];
+            $this->data['MobileActivate']['unlock_answer'] = $user['User']['unlock_answer'];
         }
 
+        // 为视图准备数据
         if (!empty($this->data['MobileActivate']['check_times']) && $this->data['MobileActivate']['check_times'] >= 5) {
             $errors['checkcode'] = '多次输入验证码均错误，请重新设定密保手机号码。';
             $this->set('no_more_check', true);
@@ -73,6 +84,7 @@ class MobileActivatesController extends AppController {
             $errors['mobile'] = '已经多次向该号码发送短信，请检查该号码是否正常。';
             $this->set('no_more_send', true);
         }
+        $this->set('unlock_questions', Configure::read('Profile.unlockQuestions'));
         $this->set('errors', $errors);
     }
 
@@ -126,8 +138,14 @@ class MobileActivatesController extends AppController {
             }
 
             // 保存手机号到用户信息
-            $this->User->read($user['User']['id']);
+            $user = $this->User->findById($user['User']['id']);
+            $this->User->set($user);
             $this->User->set('mobile', $ma['MobileActivate']['mobile']);
+            $this->User->set('mobile_locked', true);
+            $this->User->set('unlock_question',
+                             $ma['MobileActivate']['unlock_question']);
+            $this->User->set('unlock_answer',
+                             $ma['MobileActivate']['unlock_answer']);
             if (!$this->User->save()) {
                 throw new Exception('未能正常保存用户信息');
             }

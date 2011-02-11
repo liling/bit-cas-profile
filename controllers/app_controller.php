@@ -4,10 +4,12 @@ class AppController extends Controller {
 
     var $components = array('CasAuth', 'Session');
     var $helpers = array('Session', 'Html', 'Js' => array('Jquery'));
+    var $uses = array('User');
 
     function beforeRender() {
         $this->set('locale', Configure::read('Config.language'));
-        $this->set('user', $this->CasAuth->user());
+        $user = $this->CasAuth->user();
+        $this->set('user', $this->User->findById($user['User']['id']));
     }
 
 }
