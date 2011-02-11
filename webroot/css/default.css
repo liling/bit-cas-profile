@@ -191,12 +191,12 @@ em {
     margin: 20px auto;
 }
 
-.menu a {
+a {
     color: blue;
     text-decoration: none;
 }
 
-.menu a:hover {
+a:hover {
     color: blue;
     text-decoration: underline;
 }
