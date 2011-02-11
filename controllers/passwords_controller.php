@@ -124,14 +124,20 @@ class PasswordsController extends AppController {
                     }
                 }
 
+                // 生成随机验证码，若该验证码与已有的有效验证码重复，则重新生成
+                do {
+                    if ($rec['via'] == 'mobile') {
+                        $code = mt_rand('100000', '999999');
+                    } else {
+                        $code = Password::generate(16, 7);
+                    }
+                    $duplicated = $this->PasswordRecovery->find('count',
+                        array('conditions' =>
+                            "PasswordRecovery.code='$code' AND
+                             PasswordRecovery.valid_until>=CURTIME()"));
+                } while ($duplicated);
 
                 // 生成找回密码记录
-                if ($rec['via'] == 'mobile') {
-                    $code = mt_rand('100000', '999999');
-                } else {
-                    $code = Password::generate(16, 7);
-                }
-
                 $this->PasswordRecovery->set('via', $rec['via']);
                 $this->PasswordRecovery->set('code', $code);
                 $this->PasswordRecovery->set('user_id', $user['User']['id']);
