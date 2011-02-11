@@ -12,15 +12,21 @@
             <label for="mobile"><?php __('输入手机号码:') ?></label>
             <?php echo $form->text('mobile', array('maxlength' => 11, 'class' => 'mobile required')); ?>
             <p class="error"><?php if (!empty($errors['mobile'])) echo $errors['mobile']; ?></p>
+        </div>
 
+        <div class="item">
             <label for="unlock_question"><?php __('解锁问题:') ?></label>
             <?php echo $form->select('unlock_question', $unlock_questions, null, array('class' => 'unlock_question required')); ?>
             <p class="error"><?php if (!empty($errors['unlock_question'])) echo $errors['unlock_question']; ?></p>
+        </div>
 
+        <div class="item">
             <label for="unlock_answer"><?php __('解锁答案:') ?></label>
             <?php echo $form->text('unlock_answer', array('class' => 'unlock_answer required')); ?>
             <p class="error"><?php if (!empty($errors['unlock_answer'])) echo $errors['unlock_answer']; ?></p>
+        </div>
 
+        <div class="footer">
             <?php echo $form->button(__('发送确认码', true), array('type' => 'submit')); ?>
         </div>
         <?php echo $form->end(); ?>

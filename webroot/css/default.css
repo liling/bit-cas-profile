@@ -103,7 +103,12 @@ em {
 
 .form input {
     width: 90%;
-    height: 2em;
+    height: 1.5em;
+    margin: 3px 0;
+}
+
+.form select {
+    width: 90%;
     margin: 3px 0;
 }
 
@@ -115,7 +120,7 @@ em {
     margin-right: 10px;
 }
 
-.form input.required {
+.form .required {
     border-width: 1px;
 }
 
