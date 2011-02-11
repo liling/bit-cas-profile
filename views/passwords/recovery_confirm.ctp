@@ -11,12 +11,12 @@
         <?php echo $form->create('Password', array('type' => 'get', 'action' => 'recovery_confirm')); ?>
 
         <div class="header">
-            <?php echo __('请输入验证码'); ?>
+            <?php echo $title_for_layout; ?>
         </div>
 
         <div class="item">
-            <label><?php echo __('验证码', true); ?></label>
-            <?php echo $form->text('code', array('maxlength' => 8, 'class' => 'code required')); ?>
+            <label for="code"><?php __('请输入确认码'); ?></label>
+            <?php echo $form->text('code', array('maxlength' => 16, 'class' => 'code required')); ?>
             <p class="error"><?php if (!empty($errors['code'])) echo $errors['code']; ?></p>
         </div>
 

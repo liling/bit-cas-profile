@@ -125,9 +125,8 @@ class MailActivatesController extends AppController {
             if (!$this->User->save()) {
                 throw new Exception('保存到数据库时失败');
             }
-            $this->MailActivate->set($ma);
-            $this->MailActivate->set('finished', true);
-            if (!$this->MailActivate->save()) {
+            $d = array('MailActivate' => array('id' => $ma['MailActivate']['id'], 'finished' => true));
+            if (!$this->MailActivate->save($d, false)) {
                 throw new Exception('保存到数据库时失败');
             }
 

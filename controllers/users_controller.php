@@ -73,8 +73,16 @@ class UsersController extends AppController {
         if (!empty($this->data)) {
             $errors = array();
             try {
+                if (empty($this->data['User']['captcha'])) {
+                    throw new Exception();
+                }
+
                 if (empty($this->data['User']['unlock_answer'])) {
-                    $errors['unlock_answer'] = '请输入问题答案';
+                    throw new Exception();
+                }
+
+                if ($this->Session->read('captcha') != $this->data['User']['captcha']) {
+                    $errors['captcha'] = '验证码错误';
                     throw new Exception();
                 }
 

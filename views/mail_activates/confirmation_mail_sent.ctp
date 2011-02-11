@@ -1,3 +1,10 @@
-<p>系统已经向您的邮箱 <?php echo $mail; ?> 发送了确认信，请在 72 小时内登录您的邮箱，并根据邮件中的提示，点击确认邮箱的连接，邮箱即修改成功。</p>
+<div id="column3" class="succeeded">
+    <?php echo $html->image('tick.jpg', array('alt' => __('成功', true), 'class' => 'tick')); ?>
 
-<p>如果您没有收到邮件，或者超过三天有效期，您只需再次修改邮件地址，系统即会重新发送确认邮件。有些邮箱地址可能会收不到我们发送的确认邮件，建议您选择较为常用的邮件提供商。</p>
+    <p><?php __('系统已向您的邮箱发送邮件，请在三天内查收。'); ?></p>
+    <p><?php echo $html->link('返回', '/users/view'); ?></p>
+</div>
+
+<div id="column4" class="description">
+    <?php echo $this->element("languages/$locale/setmail_description"); ?>
+</div>

@@ -47,11 +47,12 @@ body {
 
 h2 {
     color: #250517;
+    margin: 5px 0;
 }
 
 h3 {
     color: #333333;
-    margin-top: 10px;
+    margin: 5px 0;
     font-weight: bold;
     font-size: 14px;
 }

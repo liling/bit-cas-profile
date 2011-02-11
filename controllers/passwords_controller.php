@@ -95,7 +95,7 @@ class PasswordsController extends AppController {
                     $rec['via'] = 'mail';
                 }
 
-                // 判断 captcha 验证码
+                // 判断 captcha 确认码
                 if ($this->Session->read('captcha') != $rec['captcha']) {
                     $errors['captcha'] = '验证码错误，请重试';
                     throw new Exception();
@@ -144,7 +144,7 @@ class PasswordsController extends AppController {
                     }
                 }
 
-                // 生成随机验证码，若该验证码与已有的有效验证码重复，则重新生成
+                // 生成随机确认码，若该确认码与已有的有效确认码重复，则重新生成
                 do {
                     if ($rec['via'] == 'mobile') {
                         $code = mt_rand('100000', '999999');
@@ -154,7 +154,7 @@ class PasswordsController extends AppController {
                     $duplicated = $this->PasswordRecovery->find('count',
                         array('conditions' =>
                             "PasswordRecovery.code='$code' AND
-                             PasswordRecovery.valid_until>=CURTIME()"));
+                             PasswordRecovery.valid_until>=NOW()"));
                 } while ($duplicated);
 
                 // 生成找回密码记录
@@ -213,7 +213,7 @@ class PasswordsController extends AppController {
     }
 
     function _send_recovery_sms($user, $code) {
-        $message = "您申请找回校园网单点登录系统的密码，其验证码为 $code";
+        $message = "您申请找回校园网单点登录系统的密码，其确认码为 $code";
         return $this->ShortMessage->send($user['User']['mobile'], $message);
     }
 
@@ -230,21 +230,21 @@ class PasswordsController extends AppController {
             if (!empty($_GET['code'])) {
                 $code = Sanitize::paranoid($_GET['code']);
             } else {
-                throw new Exception('请输入验证码');
+                throw new Exception();
             }
 
             $pr = $this->PasswordRecovery->find('first',
                 array('conditions' => "PasswordRecovery.code='$code' AND
-                                       PasswordRecovery.valid_until>=CURTIME()")
+                                       PasswordRecovery.valid_until>=NOW()")
                 );
-            // 检查验证码是否正确
+            // 检查确认码是否正确
             if ($pr == null) {
-                throw new Exception('验证码错误');
+                throw new Exception('确认码错误');
             }
 
-            // 检查验证码是否使用过
+            // 检查确认码是否使用过
             if ($pr['PasswordRecovery']['finished']) {
-                throw new Exception('验证码已经使用过');
+                throw new Exception('确认码已经使用过');
             }
 
             // 重新设置用户密码
@@ -260,10 +260,9 @@ class PasswordsController extends AppController {
                 throw new Exception($m);
             }
 
-            // 将验证码设定为使用过
-            $this->PasswordRecovery->set($pr);
-            $this->PasswordRecovery->set('finished', true);
-            $this->PasswordRecovery->save();
+            // 将确认码设定为使用过
+            $d = array('PasswordRecovery' => array('id' => $pr['id'], 'finished' => true));
+            $this->PasswordRecovery->save($d, false);
 
             if ($pr['PasswordRecovery']['via'] == 'mail') {
                 $rst = $this->_send_new_password_mail($person, $newpwd);
@@ -280,6 +279,7 @@ class PasswordsController extends AppController {
             $this->set('password', $newpwd);
             return $this->render('recovery_succeed');
         } catch (Exception $e) {
+            $errors = array();
             $m = $e->getMessage();
             if ($m) $errors['code'] = $m;
             $this->set('errors', $errors);

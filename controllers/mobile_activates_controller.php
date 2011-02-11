@@ -57,7 +57,7 @@ class MobileActivatesController extends AppController {
 
                 $id = $this->MobileActivate->getInsertID();
                 $this->data = $this->MobileActivate->findById($id);
-                return $this->flash('已向您的手机发送验证码，请查收', '/mobile_activates/setmobile', 3);
+                $this->redirect('/mobile_activates/setmobile');
             } catch (Exception $e) {
                 $m = $e->getMessage();
                 if (!empty($m)) $this->Session->setFlash($m);
@@ -76,7 +76,7 @@ class MobileActivatesController extends AppController {
 
         // 为视图准备数据
         if (!empty($this->data['MobileActivate']['check_times']) && $this->data['MobileActivate']['check_times'] >= 5) {
-            $errors['checkcode'] = '多次输入验证码均错误，请重新设定密保手机号码。';
+            $errors['checkcode'] = '多次输入确认码均错误，请重新设定密保手机号码。';
             $this->set('no_more_check', true);
             $this->set('no_more_send', true);
         }
@@ -89,14 +89,14 @@ class MobileActivatesController extends AppController {
     }
 
     /**
-     * 用户收到短信后，输入验证码。
+     * 用户收到短信后，输入确认码。
      */
     function confirm() {
-        $this->set('title_for_layout', '输入验证码');
+        $this->set('title_for_layout', '输入确认码');
 
         try {
             if (empty($this->data['MobileActivate']['checkcode'])) {
-                throw new Exception('请输入验证码');
+                throw new Exception('请输入确认码');
             }
 
             $user = $this->CasAuth->user(); 
@@ -114,39 +114,33 @@ class MobileActivatesController extends AppController {
             }
 
             if ($ma['MobileActivate']['code'] != $this->data['MobileActivate']['checkcode']) {
-                $ma['MobileActivate']['check_times']++;
-                unset($ma['MobileActivate']['modified']);
-                $this->MobileActivate->set($ma);
-                $this->MobileActivate->save();
-                throw new Exception('验证码错误');
+                $d = array('MobileActivate' => array('id' => $ma['MobileActivate']['id'], 'check_times' => $ma['MobileActivate']['check_times']+1));
+                $this->MobileActivate->save($d, false);
+                throw new Exception('确认码错误');
             }
 
-            // 检查验证码是否过期
+            // 检查确认码是否过期
             $now = new DateTime('now');
             $created = date_create($ma['MobileActivate']['created']);
             $created->add(new DateInterval('P1D'));
             if ($now > $created) {
-                throw new Exception('验证码已过期');
+                throw new Exception('确认码已过期');
             }
 
             // 保存验证信息
-            $this->MobileActivate->set($ma);
-            $this->MobileActivate->set('finished', true);
-            $this->MobileActivate->set('modified', null);
-            if (!$this->MobileActivate->save()) {
+            $d = array('MobileActivate' => array('id' => $ma['MobileActivate']['id'], 'finished' => true));
+            if (!$this->MobileActivate->save($d, false)) {
                 throw new Exception('未能正常保存验证信息');
             }
 
             // 保存手机号到用户信息
-            $user = $this->User->findById($user['User']['id']);
-            $this->User->set($user);
-            $this->User->set('mobile', $ma['MobileActivate']['mobile']);
-            $this->User->set('mobile_locked', true);
-            $this->User->set('unlock_question',
-                             $ma['MobileActivate']['unlock_question']);
-            $this->User->set('unlock_answer',
-                             $ma['MobileActivate']['unlock_answer']);
-            if (!$this->User->save()) {
+            $d = array('User' => array(
+                'id' => $user['User']['id'],
+                'mobile' => $ma['MobileActivate']['mobile'],
+                'mobile_locked' => true,
+                'unlock_question' => $ma['MobileActivate']['unlock_question'],
+                'unlock_answer' => $ma['MobileActivate']['unlock_answer']));
+            if (!$this->User->save($d, false)) {
                 throw new Exception('未能正常保存用户信息');
             }
 
@@ -200,10 +194,10 @@ class MobileActivatesController extends AppController {
             if ($rst !== true) {
                 throw new Exception('未能成功发送手机短信：'.$rst);
             }
-            $this->MobileActivate->set(
-                'send_times', $ma['MobileActivate']['send_times'] + 1);
-            $this->MobileActivate->set('modified', null);
-            if (!$this->MobileActivate->save()) {
+            $d = array('MobileActivate' => array(
+                'id' => $ma['MobileActivate']['id'],
+                'send_times' => $ma['MobileActivate']['send_times']+1));
+            if (!$this->MobileActivate->save($d, false)) {
                 throw new Exception('保存数据失败');
             }
         } catch (Exception $e) {
@@ -230,10 +224,10 @@ class MobileActivatesController extends AppController {
                 throw new Exception('该密保手机验证记录与用户不匹配');
             }
 
-            $this->MobileActivate->set('finished', true);
-            $this->MobileActivate->set('aborted', true);
-            $this->MobileActivate->set('modified', null);
-            if (!$this->MobileActivate->save()) {
+            $d = array('MobileActivate' => array(
+                'id' => $ma['MobileActivate']['id'],
+                'finished' => true, 'aborted' => true));
+            if (!$this->MobileActivate->save($d, false)) {
                 throw new Exception('保存数据失败');
             }
         } catch (Exception $e) {
@@ -248,10 +242,10 @@ class MobileActivatesController extends AppController {
      * 向用户发送手机短信。
      *
      * @param $mobile 手机号
-     * @param $code 验证码
+     * @param $code 确认码
      */
     function _send_short_message($mobile, $code) {
-        $message = sprintf('您在校园网单点登录服务的密保手机验证码为: %s', $code);
+        $message = sprintf('您在校园网单点登录服务的密保手机确认码为: %s', $code);
         return $this->ShortMessage->send($mobile, $message);
     }
 

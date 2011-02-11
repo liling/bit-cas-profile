@@ -8,8 +8,13 @@
         $this->Js->each('$(this).corner();', true);
     ?>
     <div class="form box">
-        <?php echo $form->create('Password'); ?>
+        <?php
+            echo $form->create('Password', array('action' => 'recovery_confirm', 'type' => 'get'));
+            echo $form->button('输入确认码', array('type' => 'submit', 'style' => 'float: right'));
+            echo $form->end();
+        ?>
 
+        <?php echo $form->create('Password'); ?>
         <div class="header">
             <?php echo $title_for_layout; ?>
         </div>
@@ -28,7 +33,7 @@
 
         <div class="item">
             <?php echo $html->image('/users/captcha', array('style' => 'float: right; border: 0;')); ?>
-            <label><?php echo __('输入图片中的内容:', true); ?></label>
+            <label><?php echo __('输入图片中的验证码:', true); ?></label>
             <?php echo $form->text('captcha', array('size' => 8, 'class' => 'captcha required', 'value' => '')); ?>
             <p class="error"><?php if (!empty($errors['captcha'])) echo $errors['captcha']; ?></p>
         </div>
