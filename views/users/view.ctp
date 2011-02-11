@@ -9,7 +9,16 @@
     <p>身份：<?php echo $person['employeetype']; ?></p>
     <p>工号/学号：<?php echo $person['employeenumber']; ?></p>
     <p>密保邮件：<?php echo $person['mail']; ?> <?php echo $this->Html->link('修改密保邮箱', '/mail_activates/setmail'); ?></p>
-    <p>密保手机：<?php echo empty($person['mobile']) ? '未设定' : $person['mobile']; ?> <?php echo $user['User']['mobile_locked'] ? $html->link('解锁', '/users/unlock_mobile') : $html->link('修改密保手机', '/mobile_activates/setmobile'); ?></p>
+    <p>密保手机：<?php echo empty($person['mobile']) ? '未设定' : $person['mobile']; ?>
+    <?php
+        if ($user['User']['mobile_locked']) {
+            echo $html->link('解锁', '/users/unlock_mobile');
+        } else {
+            echo $html->link('修改密保手机', '/mobile_activates/setmobile');
+            echo '&nbsp;';
+            echo $html->link('加锁', '/users/lock_mobile');
+        }
+    ?></p>
 
     <h3>帐号信息</h3>
     <p>一卡通：</p>

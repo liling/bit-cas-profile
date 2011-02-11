@@ -65,6 +65,24 @@ class UsersController extends AppController {
     }
 
     /**
+     * 对密保手机号码加锁
+     */
+    function lock_mobile() {
+        $user = $this->CasAuth->user();
+        $user = $this->User->findById($user['User']['id']);
+        if (empty($user['User']['mobile']) ||
+            empty($user['User']['unlock_question']) ||
+            empty($user['User']['unlock_answer']))
+        {
+            $this->redirect('/mobile_activates/setmobile');
+        }
+
+        $d = array('id' => $user['User']['id'], 'mobile_locked' => true);
+        $this->User->save(array('User' => $d), false);
+        $this->redirect('/users/view');
+    }
+
+    /**
      * 解锁用户的密保手机号码
      */
     function unlock_mobile() {
