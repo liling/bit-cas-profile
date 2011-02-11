@@ -9,7 +9,21 @@ class LdapSyncComponent extends Object {
     function CreateUserFromLdap($username) {
         $UserModel = &ClassRegistry::init('User');
         $user = $UserModel->findByUsername($username);
-        if (!$user) {
+        if ($user) {
+            $Person = &ClassRegistry::init('Person');
+            $filter = $Person->primaryKey."=".$username; 
+            $person = $Person->find('first', array( 'conditions'=>$filter)); 
+            if (!empty($person)) {
+                $UserModel->set($user);
+                if (!(empty($person['Person']['mail']))) {
+                    $UserModel->set('mail', $person['Person']['mail']);
+                }
+                if (!(empty($person['Person']['mobile']))) {
+                    $UserModel->set('mobile', $person['Person']['mobile']);
+                }
+                $UserModel->save();
+            }
+        } else {
             $Person = &ClassRegistry::init('Person');
             $filter = $Person->primaryKey."=".$username; 
             $person = $Person->find('first', array( 'conditions'=>$filter)); 
