@@ -80,6 +80,10 @@ class PasswordsController extends AppController {
         $errors = array();
         $this->set('title_for_layout', '找回密码');
 
+        if ($this->CasAuth->user()) {
+            return $this->redirect('/users/view');
+        }
+
         if (!empty($this->data['Password'])) {
             try {
                 $rec = $this->data['Password'];
