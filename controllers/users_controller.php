@@ -10,7 +10,9 @@ class UsersController extends AppController {
     /**
      * 主要功能已经由 Auth 组件提供
      */
-    function login() {}
+    function login() {
+        $this->redirect('/users/view');
+    }
 
     /**
      * 退出系统，同时退出 CAS

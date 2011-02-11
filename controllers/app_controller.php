@@ -7,6 +7,7 @@ class AppController extends Controller {
 
     function beforeRender() {
         $this->set('locale', Configure::read('Config.language'));
+        $this->set('user', $this->CasAuth->user());
     }
 
 }
