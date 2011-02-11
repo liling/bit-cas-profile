@@ -95,6 +95,7 @@ class PasswordsController extends AppController {
                     $rec['via'] = 'mail';
                 }
 
+                // 判断 captcha 验证码
                 if ($this->Session->read('captcha') != $rec['captcha']) {
                     $errors['captcha'] = '验证码错误，请重试';
                     throw new Exception();
@@ -102,13 +103,24 @@ class PasswordsController extends AppController {
                     unset ($_SESSION['captcha']);
                 }
 
-                $user = $this->LdapSync->CreateUserFromLdap($rec['username']);
+                $user = $this->LdapSync->createUserFromLdap($rec['username']);
                 if ($user == null) {
                     // 未找到用户
                     $errors['username'] = '找不到您的账户';
                     throw new Exception();
                 }
 
+                // 检查用户今日是否已经多次申请回复密码
+                $prcount = $this->PasswordRecovery->find('count',
+                    array('conditions' =>
+                        "PasswordRecovery.via='{$rec['via']}' AND
+                         PasswordRecovery.user_id={$user['User']['id']} AND
+                         Date(PasswordRecovery.created)=CURDATE()"));
+                if (Configure::read('debug') > 1 && $prcount > 5) {
+                    throw new Exception('您今天已经多次申请密码找回，请明天再试。');
+                }
+
+                // 检查用户是否有设定密保邮件或密保手机
                 if ($rec['via'] == 'mail') {
                     if (empty($user['User']['mail']))
                         throw new Exception('您的帐号没有设置密保邮件');
@@ -120,6 +132,7 @@ class PasswordsController extends AppController {
                     }
                 }
 
+                // 检查密保邮件或密保手机号是否正确
                 if ($rec['via'] == 'mobile') {
                     if (empty($user['User']['mobile']))
                         throw new Exception('您的帐号没有设置密保手机');
