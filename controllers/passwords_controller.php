@@ -6,7 +6,7 @@ App::import('Vendor', 'Password');
 class PasswordsController extends AppController {
 
     var $components = array('CasAuth', 'Session', 'Mailer', 'LdapSync', 'ShortMessage');
-    var $uses = array('PasswordRecovery', 'User', 'Person');
+    var $uses = array('PasswordRecovery', 'User', 'Person', 'SmsLog');
 
     function beforeFilter() {
         $this->CasAuth->allow('recovery', 'recovery_confirm');
@@ -199,7 +199,7 @@ class PasswordsController extends AppController {
         return $this->Mailer->send();
     }
 
-    function _send_recovery_sms($mobile, $code) {
+    function _send_recovery_sms($user, $code) {
         $message = "您申请找回校园网单点登录系统的密码，其验证码为 $code";
         return $this->ShortMessage->send($user['User']['mobile'], $message);
     }

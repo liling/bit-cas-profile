@@ -2,6 +2,10 @@
 
 class ShortMessageComponent extends Object { 
 
+    function startup(&$controller) {
+        $this->controller = $controller;
+    }
+
     function send($mobile, $message) {
 
         $debug = Configure::read('SMS.debug');
@@ -20,8 +24,8 @@ class ShortMessageComponent extends Object {
 
             $sms = array('phone' => $mobile, 'message' => $message,
                          'url' => $url, 'output' => $output);
-            $this->SmsLog->set(array('SmsLog' => $sms));
-            $this->SmsLog->save();
+            $this->controller->SmsLog->set(array('SmsLog' => $sms));
+            $this->controller->SmsLog->save();
 
             ereg("<TITLE>(.*)</TITLE>", $output, $regs);
             if (!empty($regs)) {
