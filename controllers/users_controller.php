@@ -5,7 +5,11 @@ class UsersController extends AppController {
     var $name = 'Users';    
     var $scaffold;
     var $uses = array('User', 'Person');
-    var $components = array('CasAuth', 'Session', 'RequestHandler');
+    var $components = array('CasAuth', 'Session', 'RequestHandler', 'Captcha');
+
+    function beforeFilter() {
+        $this->CasAuth->allow('captcha');
+    }
 
     /**
      * 主要功能已经由 Auth 组件提供
@@ -19,6 +23,11 @@ class UsersController extends AppController {
      */
     function logout() {
         $this->CasAuth->logout();
+    }
+
+    function captcha() {
+        $this->autoRender = false;
+        $this->Captcha->render();
     }
 
     /**
