@@ -6,7 +6,7 @@ class MobileActivatesController extends AppController {
 
     var $name = 'MobileActivates';
 
-    var $components = array('CasAuth', 'Session', 'LdapSync');
+    var $components = array('CasAuth', 'Session', 'LdapSync', 'ShortMessage');
     var $uses = array('MobileActivate', 'User', 'SmsLog');
 
     function index() {
@@ -234,36 +234,7 @@ class MobileActivatesController extends AppController {
      */
     function _send_short_message($mobile, $code) {
         $message = sprintf('您在校园网单点登录服务的密保手机验证码为: %s', $code);
-
-        $username = Configure::read('SMS.username');
-        $password = Configure::read('SMS.password');
-        $send_url = "http://www.xunsai.net:8000/?user=$username&password=$password&phonenumber=%s&text=%s&charset=utf-8";
-
-        $url = sprintf($send_url, urlencode($mobile), urlencode($message));
-        $output = file_get_contents($url);
-        if ($output) {
-            $output = iconv('GB2312', 'UTF-8', $output);
-
-            $sms = array('phone' => $mobile, 'message' => $message,
-                         'url' => $url, 'output' => $output);
-            $this->SmsLog->set(array('SmsLog' => $sms));
-            $this->SmsLog->save();
-
-            ereg("<TITLE>(.*)</TITLE>", $output, $regs);
-            if (!empty($regs)) {
-                $result = $regs[1];
-            } else {
-                $result = '未知错误';
-            }
-        } else {
-            $result = '网络故障，无法连接短信服务器';
-        }
-
-        if ($result == '您所发送的信息已经成功提交') {
-            $result = true;
-        }
-
-        return $result;
+        return $this->ShortMessage->send($mobile, $message);
     }
 
 }
