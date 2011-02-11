@@ -103,6 +103,15 @@ class CasAuthComponent extends AuthComponent {
         return $data;
     }
 
+    function login($data = null) {
+        $rst = parent::login($data);
+        if ($rst) {
+            $user = $this->user();
+            LdapSyncComponent::syncUserFromLdap($user['User']['username']);
+        }
+        return $rst;
+    }
+
     /** 
      * Logout execution method.  Initializes CAS client and force logout if required before returning to parent logout method.
      * 
