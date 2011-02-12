@@ -11,7 +11,7 @@ class Person extends AppModel {
 
     // The table would be the branch of your basedn that you defined in  
     // the database config 
-    var $useTable = 'ou=people';  
+    var $useTable = 'ou=people,dc=bit,dc=edu,dc=cn';
 
     var $validate = array( 
         'cn' => array( 
