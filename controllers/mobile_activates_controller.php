@@ -30,6 +30,8 @@ class MobileActivatesController extends AppController {
         if (!empty($this->data['MobileActivate'])) {
             try {
                 $uid = $user['User']['id'];
+
+                // 防止用户不断修改密保手机
                 $tc = $this->MobileActivate->find('count',
                     array('conditions' =>
                         "MobileActivate.user_id=$uid AND
@@ -39,22 +41,24 @@ class MobileActivatesController extends AppController {
                     throw new Exception('您今天已经三次修改密保手机号了，明天再继续吧。');
                 }
                 
+                // 保存
                 $code = mt_rand('100000', '999999');
                 $this->MobileActivate->set($this->data);
                 $this->MobileActivate->set('user_id', $uid);
                 $this->MobileActivate->set('code', $code);
-                $questions = Configure::read('Profile.unlockQuestions');
                 if (!$this->MobileActivate->save()) {
                     $errors = $this->MobileActivate->invalidFields();
                     throw new Exception();
                 }
 
+                // 发送手机短信
                 $mobile = $this->data['MobileActivate']['mobile'];
                 $rst = $this->_send_short_message($mobile, $code);
                 if ($rst !== true) {
                     throw new Exception('未能成功发送手机短信：'.$rst);
                 }
 
+                // 显示重发号码和输入确认码界面
                 $id = $this->MobileActivate->getInsertID();
                 $this->data = $this->MobileActivate->findById($id);
                 $this->redirect('/mobile_activates/setmobile');
@@ -64,6 +68,7 @@ class MobileActivatesController extends AppController {
                 $this->set('errors', $errors);
             }
         } else {
+            // 显示设定手机号界面
             $uid = $user['User']['id'];
             $this->data = $this->MobileActivate->find('first',
                 array('conditions' => "MobileActivate.user_id=$uid AND 
@@ -95,10 +100,12 @@ class MobileActivatesController extends AppController {
         $this->set('title_for_layout', '输入确认码');
 
         try {
+            // 检查确认码是否为空
             if (empty($this->data['MobileActivate']['checkcode'])) {
                 throw new Exception('请输入确认码');
             }
 
+            // 查找用户最后的密保手机修改记录
             $user = $this->CasAuth->user(); 
             $uid = $user['User']['id'];
             $ma = $this->MobileActivate->find('first',
@@ -109,13 +116,17 @@ class MobileActivatesController extends AppController {
                 throw new Exception('请先填写密保手机号码');
             }
 
+            // 如果用户输入输入确认码错误超过五次，则不允许输入
             if ($ma['MobileActivate']['check_times'] >= 5) {
                 throw new Exception();
             }
 
+            // 检查确认码是否正确，如果错误则增加错误次数记录
             if ($ma['MobileActivate']['code'] != $this->data['MobileActivate']['checkcode']) {
-                $d = array('MobileActivate' => array('id' => $ma['MobileActivate']['id'], 'check_times' => $ma['MobileActivate']['check_times']+1));
-                $this->MobileActivate->save($d, false);
+                $d = array(
+                    'id' => $ma['MobileActivate']['id'],
+                    'check_times' => $ma['MobileActivate']['check_times']+1);
+                $this->MobileActivate->save(array('MobileActivate'=>$d), false);
                 throw new Exception('确认码错误');
             }
 
@@ -188,12 +199,15 @@ class MobileActivatesController extends AppController {
                 throw new Exception('短信发送需要一定时间，距离上一次发送短信还不足五分钟。');
             }
 
+            // 发送手机短信
             $mobile = $ma['MobileActivate']['mobile'];
             $code = $ma['MobileActivate']['code'];
             $rst = $this->_send_short_message($mobile, $code);
             if ($rst !== true) {
                 throw new Exception('未能成功发送手机短信：'.$rst);
             }
+
+            // 保存数据
             $d = array('MobileActivate' => array(
                 'id' => $ma['MobileActivate']['id'],
                 'send_times' => $ma['MobileActivate']['send_times']+1));
@@ -224,6 +238,7 @@ class MobileActivatesController extends AppController {
                 throw new Exception('该密保手机验证记录与用户不匹配');
             }
 
+            // 将记录标志为已放弃
             $d = array('MobileActivate' => array(
                 'id' => $ma['MobileActivate']['id'],
                 'finished' => true, 'aborted' => true));

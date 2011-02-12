@@ -13,7 +13,7 @@ class PasswordsController extends AppController {
     }
 
     function index() {
-        return $this->flash('跳转到修改密码页面', '/passwords/change', 0);
+        return $this->flash('跳转中', '/passwords/change', 0);
     }
 
     /**
@@ -73,8 +73,15 @@ class PasswordsController extends AppController {
     }
 
     /**
-     * 让用户输入自己的用户名（工号/学号）以及电子邮件地址，判断用户的输入是否
-     * 正确。如果用户输入的信息匹配，则向用户的电子信箱发送修改密码确认信。
+     * 让用户输入自己的用户名（工号/学号）以及邮件地址或手机号，判断用户的
+     * 输入是否正确。如果用户输入的信息匹配，则向用户的邮箱或手机发送修改
+     * 密码确认信。
+     *
+     * 系统生成确认码时要保证它在目前所有的有效确认码中是唯一的。这是因为
+     * 用户在重设密码的步骤只需输入确认码一项信息。
+     *
+     * 短信确认码是六位的数字，其有效期是半小时；邮件确认码是十六位大小写
+     * 英文和数字的混合体，其有效期是三天。
      */
     function recovery() {
         $errors = array();
@@ -163,8 +170,10 @@ class PasswordsController extends AppController {
                 $this->PasswordRecovery->set('user_id', $user['User']['id']);
                 $valid_until = new DateTime();
                 if ($rec['via'] == 'mobile') {
+                    // 短信的有效期为半小时
                     $valid_until->add(new DateInterval('PT30M'));
                 } else {
+                    // 邮件的有效期为三天
                     $valid_until->add(new DateInterval('P3D'));
                 }
                 $this->PasswordRecovery->set(
@@ -212,16 +221,19 @@ class PasswordsController extends AppController {
         return $this->Mailer->send();
     }
 
+    /**
+     * 向用户的手机发送确认码。
+     */
     function _send_recovery_sms($user, $code) {
         $message = "您申请找回校园网单点登录系统的密码，其确认码为 $code";
         return $this->ShortMessage->send($user['User']['mobile'], $message);
     }
 
     /**
-     * 处理用户修改密码确认。用于确认的信息包括一个顺序号和相应的确认码。
+     * 处理用户修改密码确认。用于确认的信息包只有确认码。
      *
-     * 如果成功确认用户身份，则自动生成一个新密码显示在屏幕上，同时向用户的邮
-     * 箱发送一封邮件以告知用户密码已经修改。
+     * 如果成功找到确认码，则自动生成一个新密码显示在屏幕上，同时向用户的邮
+     * 箱或手机发送该密码。
      */
     function recovery_confirm() {
         $this->set('title_for_layout', '找回密码确认');
@@ -261,8 +273,9 @@ class PasswordsController extends AppController {
             }
 
             // 将确认码设定为使用过
-            $d = array('PasswordRecovery' => array('id' => $pr['id'], 'finished' => true));
-            $this->PasswordRecovery->save($d, false);
+            $d = array('id' => $pr['PasswordRecovery']['id'],
+                       'finished' => true);
+            $this->PasswordRecovery->save(array('PasswordRecovery'=>$d), false);
 
             if ($pr['PasswordRecovery']['via'] == 'mail') {
                 $rst = $this->_send_new_password_mail($person, $newpwd);
@@ -299,6 +312,9 @@ class PasswordsController extends AppController {
         return $this->Mailer->send();
     }
 
+    /**
+     * 向用户的手机发送生成的密码。
+     */
     function _send_new_password_sms($person, $password) {
         $message = "您在校园网单点登录系统的密码已经被重置为 $password";
         return $this->ShortMessage->send($person['Person']['mobile'], $message);

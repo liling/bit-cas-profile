@@ -36,6 +36,7 @@ class MailActivatesController extends AppController {
                     throw new Exception();
                 }
  
+                // 检查用户是否修改了密保邮件地址
                 $user = $this->CasAuth->user();
                 $user = $this->User->findById($user['User']['id']);
                 if ($user['User']['mail'] == $d['mail']) {
@@ -43,7 +44,7 @@ class MailActivatesController extends AppController {
                     throw new Exception();
                 }
 
-                // 生成验证码
+                // 保存数据
                 $code = Password::generate(8, 7);
                 $this->MailActivate->set($this->data);
                 $this->MailActivate->set('user_id', $user['User']['id']);
@@ -53,6 +54,7 @@ class MailActivatesController extends AppController {
                     throw new Exception();
                 }
 
+                // 发送确认邮件
                 $id = $this->MailActivate->getInsertID();
                 $url = Router::url("/mail_activates/confirm/$id/$code", true);
                 $result = $this->_send_confirm_mail($d['mail'], $url);
@@ -120,18 +122,23 @@ class MailActivatesController extends AppController {
                 throw new Exception('验证码已过期');
             }
 
-            $this->User->read('id', $ma['MailActivate']['user_id']);
-            $this->User->set('mail', $ma['MailActivate']['mail']);
-            if (!$this->User->save()) {
-                throw new Exception('保存到数据库时失败');
-            }
-            $d = array('MailActivate' => array('id' => $ma['MailActivate']['id'], 'finished' => true));
-            if (!$this->MailActivate->save($d, false)) {
+            // 保存邮箱到用户数据
+            $d = array('id' => $ma['MailActivate']['user_id'],
+                       'mail' => $ma['MailActivate']['mail']);
+            if (!$this->User->save('MailActivate' => $d, false)) {
                 throw new Exception('保存到数据库时失败');
             }
 
+            // 将邮箱修改记录标志为已完成
+            $d = array('id' => $ma['MailActivate']['id'], 'finished' => true);
+            if (!$this->MailActivate->save(array('MailActivate'=>$d), false)) {
+                throw new Exception('保存到数据库时失败');
+            }
+
+            // 保存数据到 LDAP
             $user = $this->User->findById($ma['MailActivate']['user_id']);
-            $rst = $this->LdapSync->updateUser($user['User']['username'], 'mail', $ma['MailActivate']['mail']);
+            $rst = $this->LdapSync->updateUser(
+                $user['User']['username'], 'mail', $ma['MailActivate']['mail']);
             if ($rst !== true) {
                 throw new Exception('保存到LDAP时失败：'.$rst);
             }
