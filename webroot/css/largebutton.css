@@ -1,0 +1,37 @@
+/* button basics */
+a.largebutton {
+    display:inline-block;
+    height: 46px;
+    padding: 0 0 0 3px;
+    font-size: 16px;
+    letter-spacing: 4px;
+    color:#333;
+    text-shadow:1px 1px 0 #fff; 
+    background:url(../img/largebutton_matrix.png) 0 0 no-repeat;
+    white-space:nowrap;
+    border:none;
+    overflow:visible;
+    cursor:pointer;
+    text-decoration:none;
+}
+  
+a.largebutton>span {
+    display:block;
+    height:46px;
+    padding:0 20px 0 18px;
+    line-height:46px;
+    background:url(../img/largebutton_matrix.png) 100% 0 no-repeat;
+}
+  
+a.largebutton:hover, a.minibutton:focus {
+    color:#fff;
+    text-decoration:none;
+    text-shadow:-1px -1px 0 rgba(0,0,0,0.3);
+    background-position:0 -60px;
+}
+a.largebutton:hover>span, a.minibutton:focus>span {
+    background-position:100% -60px;
+}
+  
+a.largebutton.mousedown{background-position:0 -120px; }
+a.largebutton.mousedown>span{background-position:100% -120px; }

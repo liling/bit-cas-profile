@@ -10,6 +10,8 @@ class LdapSyncComponent extends Object {
         $UserModel = &ClassRegistry::init('User');
         $user = $UserModel->findByUsername($username);
         if (empty($user)) {
+            $this->log("找不到用户 {$username}，从 LDAP 服务器创建", 'debug');
+
             $Person = &ClassRegistry::init('Person');
             $filter = $Person->primaryKey."=".$username; 
             $person = $Person->find('first', array( 'conditions'=>$filter)); 
@@ -18,7 +20,11 @@ class LdapSyncComponent extends Object {
                 $UserModel->create(array('username' => $username, 'password' => '*', 'fullname' => $person['Person']['cn']));
                 $UserModel->save();
                 $user = $UserModel->findByUsername($username);
+            } else {
+                $this->log("用户 $username 在 LDAP 中不存在", 'debug');
             }
+        } else {
+            $this->log("用户 $username 在本地数据库已经存在", 'debug');
         }
         return $user;
     }

@@ -32,16 +32,20 @@ body {
 #header ul {
     float: right;
     list-style-type: none;
+    margin-right: 80px;
 }
 
 #header ul li {
     float: left;
-    margin-right: 10px;
+    margin-left: 10px;
 }
 
-#header > hr {
-    clear: both;
+#header > hr.clear-both {
     color: #9BC11B;
+}
+
+hr.clear-both {
+    clear: both;
     border: 0;
 }
 
@@ -157,9 +161,8 @@ em {
     margin-bottom: 20px;
 }
 
-#content > hr {
+#content > hr.clear-both {
     margin-top: 20px;
-    clear: both;
     border-top: 1px solid #cccccc;
     border-bottom: 0;
 }
@@ -205,4 +208,8 @@ a {
 a:hover {
     color: blue;
     text-decoration: underline;
+}
+
+img {
+    border: 0;
 }

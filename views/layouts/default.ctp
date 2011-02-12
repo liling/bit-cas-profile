@@ -15,15 +15,20 @@
 
 		echo $scripts_for_layout;
 	?>
+    <style>
+        #header-wrapper {
+            background: url(<?php echo $this->Html->url('/img/dove.png', true); ?>) no-repeat scroll 97% -30% #9BC11B;
+        }
+    </style>
 </head>
 <body>
 	<div id="container">
 		<div id="header">
 			<div id="header-wrapper">
-                <h1><?php echo __('校园网单点登录服务', true).' - '.$title_for_layout; ?></h1>
+                <a href="<?php echo $this->Html->url('/'); ?>"><?php echo $this->Html->image('/img/logo.png'); ?></a>
                 <?php echo $this->element('menu'); ?>
             </div>
-            <hr />
+            <hr class="clear-both"/>
 		</div>
 		<div id="content">
 
@@ -31,7 +36,7 @@
 
 			<?php echo $content_for_layout; ?>
 
-            <hr />
+            <hr class="clear-both"/>
 		</div>
 		<div id="footer">
             <p><?php echo $this->Html->link('北京理工大学网络服务中心', 'http://nsc.bit.edu.cn', array('target' => '_blank', 'escape' => false)); ?> 地址：计算中心楼三层 七号教学楼五层</p>

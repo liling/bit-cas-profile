@@ -15,7 +15,7 @@ class UsersController extends AppController {
      * 主要功能已经由 Auth 组件提供
      */
     function login() {
-        $this->redirect('/users/view');
+        $this->redirect('/');
     }
 
     /**

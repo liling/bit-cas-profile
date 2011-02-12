@@ -8,6 +8,7 @@ class AppController extends Controller {
 
     function beforeRender() {
         $this->set('locale', Configure::read('Config.language'));
+
         $user = $this->CasAuth->user();
         $this->set('user', $this->User->findById($user['User']['id']));
     }

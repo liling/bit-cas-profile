@@ -76,6 +76,7 @@ class CasAuthComponent extends AuthComponent {
 
         // 如果用户尚未登录，则通过 CAS 做用户身份认证
         if (!$this->user()) { 
+            $this->log('开始CAS认证', 'debug');
             // Set debug mode 
             phpCAS::setDebug(false); 
             // 初始化 phpCAS 
@@ -86,11 +87,14 @@ class CasAuthComponent extends AuthComponent {
             phpCAS::forceAuthentication(); 
 
             // 认证成功的情况下，从 LDAP 服务器获取相关人员的基本信息
-            LdapSyncComponent::CreateUserFromLdap(phpCAS::getUser());
+            $username = phpCAS::getUser();
+            $this->log("CAS 返回的用户为 $username", 'debug');
+            LdapSyncComponent::createUserFromLdap($username);
 
             $model =& $this->getModel(); 
             $controller->data[$model->alias][$this->fields['username']] = phpCAS::getUser(); 
         } 
+
         return parent::startup($controller); 
     } 
 
@@ -103,14 +107,14 @@ class CasAuthComponent extends AuthComponent {
         return $data;
     }
 
-    function login($data = null) {
+    /*function login($data = null) {
         $rst = parent::login($data);
         if ($rst) {
             $user = $this->user();
             LdapSyncComponent::syncUserFromLdap($user['User']['username']);
         }
         return $rst;
-    }
+    }*/
 
     /** 
      * Logout execution method.  Initializes CAS client and force logout if required before returning to parent logout method.
