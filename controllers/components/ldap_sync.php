@@ -17,7 +17,18 @@ class LdapSyncComponent extends Object {
             $person = $Person->find('first', array( 'conditions'=>$filter)); 
 
             if ($person) {
-                $UserModel->create(array('username' => $username, 'password' => '*', 'fullname' => $person['Person']['cn']));
+                $UserModel->create(array(
+					'username' => $username,
+					'password' => '*',
+					'fullname' => $person['Person']['cn'],
+					'mobile_locked' => 0
+				));
+				if (!empty($person['Person']['mobile'])) {
+					$UserModel->set('mobile', $person['Person']['mobile']);
+				}
+				if (!empty($person['Person']['mail'])) {
+					$UserModel->set('mail', $person['Person']['mail']);
+				}
                 $UserModel->save();
                 $user = $UserModel->findByUsername($username);
             } else {
