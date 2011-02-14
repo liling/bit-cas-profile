@@ -96,7 +96,7 @@ class PasswordsController extends AppController {
                 $rec = $this->data['Password'];
 
                 // 如果输入的手机号码，则将 via 设置为 mobile，否则是 mail
-                if (preg_match('/^1[0-9]{10}$/', $rec['mail'])) {
+                if (preg_match('/^[0-9]*$/', $rec['mail'])) {
                     $rec['via'] = 'mobile';
                 } else {
                     $rec['via'] = 'mail';
