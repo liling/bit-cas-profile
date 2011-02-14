@@ -1,5 +1,7 @@
 <?php
 
+App::import('Vendor', 'Curl');
+
 class ShortMessageComponent extends Object { 
 
     function startup(&$controller) {
@@ -15,7 +17,9 @@ class ShortMessageComponent extends Object {
 
         $url = sprintf($send_url, urlencode($mobile), urlencode($message));
         if (!$debug) {
-            $output = file_get_contents($url);
+            //$output = file_get_contents($url);
+			$cc = new cURL(false, null, 'gzip', Configure::read('SMS.proxy'));
+			$output = $cc->get($url);
         } else {
             $output = '<TITLE>您所发送的信息已经成功提交</TITLE>';
         }
