@@ -133,7 +133,7 @@ class CasAuthComponent extends AuthComponent {
         phpCAS::setNoCasServerValidation(); 
         // Force CAS logout if required 
         if (phpCAS::isAuthenticated()) { 
-            phpCAS::logout(array('url' => 'http://www.cakephp.org')); // Provide login url for your application 
+            phpCAS::logout(array('service' => 'https://login.bit.edu.cn/profile/')); // Provide login url for your application 
         } 
         return parent::logout(); 
     } 
