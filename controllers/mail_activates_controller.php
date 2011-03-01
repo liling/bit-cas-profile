@@ -125,7 +125,7 @@ class MailActivatesController extends AppController {
             // 保存邮箱到用户数据
             $d = array('id' => $ma['MailActivate']['user_id'],
                        'mail' => $ma['MailActivate']['mail']);
-            if (!$this->User->save('MailActivate' => $d, false)) {
+            if (!$this->User->save(array('MailActivate' => $d), false)) {
                 throw new Exception('保存到数据库时失败');
             }
 
