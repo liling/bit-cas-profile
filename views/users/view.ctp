@@ -20,8 +20,27 @@
         }
     ?></p>
 
-    <h3>帐号信息</h3>
+    <!--<h3>帐号信息</h3>
     <p>一卡通：</p>
     <p>校园网：</p>
-    <p>校园邮件：</p>
+    <p>校园邮件：</p>-->
+
+    <h3>访问日志</h3>
+    <table>
+        <tr>
+            <th>时间</th>
+            <th>IP地址</th>
+            <th>操作</th>
+        </tr>
+    <?php foreach ($trails as $t): ?>
+        <tr>
+            <td><?php echo $t['AuditTrail']['AUD_DATE']; ?></td>
+            <td><?php echo $t['AuditTrail']['AUD_CLIENT_IP']; ?></td>
+        <?php switch ($t['AuditTrail']['AUD_ACTION']) {
+              case 'AUTHENTICATION_SUCCESS': echo '<td class="login-success">登录成功</td>'; break;
+              case 'AUTHENTICATION_FAILED': echo '<td class="login-failed">登录失败</td>'; break;
+        } ?>
+        </tr>
+    <?php endforeach; ?>
+    </table>
 </div>

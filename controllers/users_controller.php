@@ -4,7 +4,7 @@ class UsersController extends AppController {
 
     var $name = 'Users';    
     var $scaffold;
-    var $uses = array('User', 'Person');
+    var $uses = array('User', 'Person', 'AuditTrail');
     var $components = array('CasAuth', 'Session', 'RequestHandler', 'Captcha');
 
     function beforeFilter() {
@@ -43,6 +43,18 @@ class UsersController extends AppController {
         $filter = $this->Person->primaryKey.'='.$user['User']['username'];
         $person = $this->Person->find('first', array('conditions'=>$filter));
         $this->set('person', $person['Person']);
+
+        $trails = $this->AuditTrail->find('all', array(
+            'conditions' => array(
+                'AuditTrail.AUD_USER' =>
+                    array("[username: {$user['User']['username']}]",
+                          "[username: {$user['User']['mail']}]"),
+                'AuditTrail.AUD_ACTION' =>
+                    array('AUTHENTICATION_SUCCESS', 'AUTHENTICATION_FAILED')),
+            'order' => 'AuditTrail.AUD_DATE DESC',
+            'limit' => 10,
+        ));
+        $this->set('trails', $trails);
     }
 
     /**

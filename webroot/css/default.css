@@ -213,3 +213,18 @@ a:hover {
 img {
     border: 0;
 }
+
+table {
+    border: 1px solid #cccccc;
+    width: 95%;
+}
+
+td, th {
+    border: 1px solid #cccccc;
+    padding: 3px;
+    text-align: center;
+}
+
+.login-failed {
+    color: red;
+}
