@@ -122,6 +122,7 @@ em {
 
 .form button {
     margin-right: 10px;
+	padding: 2px;
 }
 
 .form .required {
